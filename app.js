@@ -31,6 +31,13 @@ server.listen(port, hostname, () => {
     console.warn(ctx.chat.id);
     return ctx.reply(ctx.chat.id);
   });
+  bot.hears(["Hi", "hi", "all", "All"], (ctx) => {
+    notify("All cards:", previous);
+  });
+  bot.hears(["update", "Update", "refresh", "Refresh"], (ctx) => {
+    updateData();
+    notify("Refreshed");
+  });
   bot.launch();
 
   // First iteration
@@ -93,7 +100,10 @@ function updateData() {
       // First update
       console.log("Bot started! Start tracking cards:");
       console.log(difference);
-      notify("BOT STARTED:", difference);
+      notify(
+        "BOT STARTED\nCommands: 'all', 'refresh'.\nFound cards:",
+        difference
+      );
       firstTime = false;
     } else if (difference.length > 0) {
       // New cards found!
@@ -106,15 +116,15 @@ function updateData() {
     // Update previous
     previous = matches;
   });
+}
 
-  function notify(message, results) {
-    bot.telegram.sendMessage(
-      process.env.CHAT_ID,
-      "*" + message + "* \n\n" + results.join("\n\n"),
-      {
-        disable_web_page_preview: true,
-        parse_mode: "Markdown",
-      }
-    );
+function notify(message, results) {
+  sendMessage = "*" + message + "* \n\n";
+  if (results) {
+    sendMessage += results?.join("\n\n");
   }
+  bot.telegram.sendMessage(process.env.CHAT_ID, sendMessage, {
+    disable_web_page_preview: true,
+    parse_mode: "Markdown",
+  });
 }
