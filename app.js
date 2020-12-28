@@ -15,6 +15,9 @@ var firstTime = true;
 var previous = [];
 var price = 320;
 var models = ["2060", "2070", "3060", "3060ti"];
+// Update range in seconds
+var minSeconds = 40;
+var maxSeconds = 80;
 
 const server = http.createServer((req, res) => {
   res.statusCode = 200;
@@ -50,7 +53,9 @@ server.listen(port, hostname, () => {
 
 function loop() {
   // Math.random() * (max - min + 1) + min); // Random time between 4 and 6 minutes
-  var rand = Math.round(Math.random() * (240000 - 360000 + 1)) + 360000;
+  var rand =
+    Math.round(Math.random() * (maxSeconds * 1000 - minSeconds * 1000 + 1)) +
+    minSeconds * 1000;
   setTimeout(function () {
     updateData();
     loop();
@@ -98,19 +103,22 @@ function updateData() {
 
     if (firstTime) {
       // First update
-      console.log("Bot started! Start tracking cards:");
+      console.log("\n" + getDate() + "\nBot started! Start tracking cards:");
       console.log(difference);
       notify(
-        "BOT STARTED\nCommands: 'all', 'refresh'.\nFound cards:",
+        getDate() +
+          "\n\nBOT STARTED\nCommands: 'all', 'refresh'.\nFound cards:",
         difference
       );
       firstTime = false;
     } else if (difference.length > 0) {
       // New cards found!
+      console.log("\n" + getDate() + "\nNew cards found!:");
       console.log(difference);
-      notify("NEW:", difference);
+      notify(getDate() + "\n\nNEW CARDS FOUND!:", difference);
     } else {
-      console.log("No new cards found...");
+      console.log("\n" + getDate() + "\nNo new cards found...");
+      // notify(getDate() + "\n\nno new cards...");
     }
 
     // Update previous
@@ -127,4 +135,22 @@ function notify(message, results) {
     disable_web_page_preview: true,
     parse_mode: "Markdown",
   });
+}
+
+function getDate() {
+  var currentdate = new Date();
+  var datetime =
+    "# " +
+    currentdate.getDate() +
+    "/" +
+    (currentdate.getMonth() + 1) +
+    "/" +
+    currentdate.getFullYear() +
+    " - " +
+    String(currentdate.getHours()).padStart(2, "0") +
+    ":" +
+    String(currentdate.getMinutes()).padStart(2, "0") +
+    ":" +
+    String(currentdate.getSeconds()).padStart(2, "0");
+  return datetime;
 }
