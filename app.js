@@ -19,18 +19,18 @@ var models = ["2060", "2070", "3060", "3060ti"];
 const server = http.createServer((req, res) => {
   res.statusCode = 200;
   res.setHeader("Content-Type", "text/plain");
-  res.end("I'm running, but in the background.");
+  res.end("I'm running, but in the background. \nRefresh to force a recheck.");
+  updateData();
 });
 
 server.listen(port, hostname, () => {
+  // Telegram bot setup
   bot.start((ctx) => ctx.reply("Welcome!"));
-
   // Method to get chat id: https://github.com/telegraf/telegraf/issues/204
   bot.hears("getid", (ctx) => {
     console.warn(ctx.chat.id);
     return ctx.reply(ctx.chat.id);
   });
-
   bot.launch();
 
   // First iteration
