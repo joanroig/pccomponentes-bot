@@ -14,7 +14,9 @@
     "request": "^2.88.2"
   },
   "dependencies": {
+    "dotenv": "^8.2.0",
     "html2json": "^1.0.2",
-    "sanitize-html": "^2.3.0"
+    "sanitize-html": "^2.3.0",
+    "telegraf": "^3.38.0"
   }
 }
