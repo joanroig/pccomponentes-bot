@@ -1,0 +1,7 @@
+{
+  "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6&page=0&order=price-asc",
+  "maxPrice": 320,
+  "models": ["2060", "2070", "3060", "3060ti"],
+  "minUpdateSeconds": 20,
+  "maxUpdateSeconds": 40
+}
