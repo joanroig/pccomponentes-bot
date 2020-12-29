@@ -58,6 +58,4 @@ Open the `.env` file in the root folder, change the BOT_TOKEN and CHAT_ID string
 
     $ npm start
 
-    or
-
-    $ ./run.sh
+Or easier if using a Raspberry (maybe chmod + x is needed), double click: `run_raspberry.sh`
