@@ -61,7 +61,7 @@ function startTelegram() {
   });
   bot.hears(["update", "Update", "refresh", "Refresh"], (ctx) => {
     updateData();
-    notify("Refreshed");
+    this.notify("Refreshed");
   });
   bot.launch();
 }
@@ -149,7 +149,7 @@ function updateData() {
 
 // Send a message using the Telegram bot
 function notify(message, results) {
-  sendMessage = "*" + message + "* \n\n";
+  let sendMessage = "*" + message + "* \n\n";
   if (results) {
     sendMessage += results?.join("\n\n");
   }
