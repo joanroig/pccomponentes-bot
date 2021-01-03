@@ -5,6 +5,9 @@ var html2json = require("html2json").html2json;
 const sanitizeHtml = require("sanitize-html");
 const { Telegraf } = require("telegraf");
 
+import { IncomingMessage, ServerResponse } from "http";
+import Purchase from "./purchase";
+
 // Server configurations
 const hostname = "127.0.0.1";
 const port = 3000;
@@ -17,51 +20,63 @@ const maxPrice = config.maxPrice;
 const models = config.models;
 const minUpdateSeconds = config.minUpdateSeconds;
 const maxUpdateSeconds = config.maxUpdateSeconds;
+const purchaseCombos = config.purchaseCombos;
 
 // Global variables
 var firstTime = true;
-var previous = [];
+var previous: string[] = [];
+var purchased: string[] = [];
+
+var purchase: Purchase;
 
 // Server startup
-const server = http.createServer((req, res) => {
-  res.statusCode = 200;
-  res.setHeader("Content-Type", "text/plain");
-  res.end(
-    "I'm running, but in the background. \nRefresh this page to force a recheck."
-  );
-  updateData();
-});
+const server = http.createServer(
+  (req: IncomingMessage, res: ServerResponse) => {
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "text/plain");
+    res.end(
+      "I'm running, but in the background. \nRefresh this page to force a recheck."
+    );
+    updateData();
+  }
+);
 
 server.listen(port, hostname, () => {
   // Setup the telegram bot
   startTelegram();
 
-  // First iteration
-  updateData();
+  purchase = new Purchase({
+    email: process.env.PCC_USER!,
+    password: process.env.PCC_PASS!,
+  });
+  purchase.prepare().then((ready) => {
+    // First iteration
+    updateData();
 
-  // Infinite loop
-  loop();
+    // Infinite loop
+    loop();
 
-  console.log(`Server running at http://${hostname}:${port}/`);
+    console.log(`Server running at http://${hostname}:${port}/`);
+  });
 });
 
 function startTelegram() {
   // Telegram bot setup
-  bot.start((ctx) => {
+  bot.start((ctx: any) => {
     console.warn("Put this CHAT_ID in the .env file:" + ctx.chat.id);
     ctx.reply("Welcome! Put this CHAT_ID in the .env file:" + ctx.chat.id);
   });
   // Method to get chat id: https://github.com/telegraf/telegraf/issues/204
-  bot.hears("getid", (ctx) => {
+  bot.hears("getid", (ctx: any) => {
     console.warn(ctx.chat.id);
     return ctx.reply("Put this CHAT_ID in the .env file:" + ctx.chat.id);
   });
-  bot.hears(["Hi", "hi", "all", "All"], (ctx) => {
+  bot.hears(["Hi", "hi", "all", "All"], (ctx: any) => {
     notify("All cards:", previous);
   });
-  bot.hears(["update", "Update", "refresh", "Refresh"], (ctx) => {
+  bot.hears(["update", "Update", "refresh", "Refresh"], (ctx: any) => {
     updateData();
-    this.notify("Refreshed");
+    notify("Refreshed");
   });
   bot.launch();
 }
@@ -81,7 +96,7 @@ function loop() {
 }
 
 function updateData() {
-  request(url, function (err, res, body) {
+  request(url, (err: any, res: any, body: any) => {
     // Allow only a super restricted set of tags and attributes to clean the HTML
     const clean = sanitizeHtml(body, {
       allowedTags: ["article", "a"],
@@ -96,25 +111,54 @@ function updateData() {
     // console.log(json)
 
     // List of items that match the requisites (each item is a string with price, name and URL)
-    var matches = [];
+    var matches: string[] = [];
 
-    json.child.forEach((element) => {
-      // Check if the price is in range
-      if (element.tag === "article" && element.attr["data-price"] < maxPrice) {
-        // Check if any of the models are in the title of the product
-        if (models.some((el) => element.attr["data-name"].includes(el))) {
-          //  Build link, name and price of the product in a single string
-          let link =
-            "https://www.pccomponentes.com" +
-            element.child.find((link) => link.tag === "a").attr.href;
+    json.child.forEach((element: any) => {
+      if (element.attr) {
+        const price = element.attr["data-price"];
+        const name = element.attr["data-name"].map((v: string) =>
+          v.toLowerCase()
+        );
 
-          let name =
-            "[" + element.attr["data-name"].join([" "]) + "](" + link + ")";
-          let price = "*" + element.attr["data-price"] + " EUR*";
-          let match = price + "\n" + name;
+        // Check if the price is in range
+        if (element.tag === "article" && price < maxPrice) {
+          // Check if any of the models are in the title of the product
+          if (models.some((el: string) => name.includes(el.toLowerCase()))) {
+            //  Build link, name and price of the product in a single string
+            let link =
+              "https://www.pccomponentes.com" +
+              element.child.find((link: any) => link.tag === "a").attr.href;
 
-          // console.log(match)
-          matches.push(match);
+            let nameText = "[" + name.join([" "]) + "](" + link + ")";
+            let priceText = "*" + price + " EUR*";
+            let match = priceText + "\n" + nameText;
+
+            // Check if it is an instant buy
+            purchaseCombos.forEach((combo: any) => {
+              if (
+                combo.price < price &&
+                combo.model.every((v: string) => name.includes(v.toLowerCase()))
+              ) {
+                if (!purchased.includes(link)) {
+                  purchased.push(link);
+                  console.warn("\n*Nice price, start the purchase!!!*");
+                  console.warn(combo);
+
+                  purchase.run(link, combo.price, 8000).then((result) => {
+                    if (result) {
+                      console.warn(
+                        "\n------------\n*** PURCHASE FINISHED ***\n------------\n"
+                      );
+                      notify(getDate() + "\n\nPURCHASED!\n\n", [match]);
+                    }
+                  });
+                }
+              }
+            });
+
+            // console.log(match)
+            matches.push(match);
+          }
         }
       }
     });
@@ -148,7 +192,7 @@ function updateData() {
 }
 
 // Send a message using the Telegram bot
-function notify(message, results) {
+function notify(message: string, results?: string[]) {
   let sendMessage = "*" + message + "* \n\n";
   if (results) {
     sendMessage += results?.join("\n\n");

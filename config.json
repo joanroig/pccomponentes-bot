@@ -1,7 +1,25 @@
 {
   "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6&page=0&order=price-asc",
-  "maxPrice": 320,
-  "models": ["2060", "2070", "3060", "3060ti"],
-  "minUpdateSeconds": 20,
-  "maxUpdateSeconds": 40
+  "maxPrice": 340,
+  "models": ["2060", "2070", "3060", "3060ti", "2080"],
+  "minUpdateSeconds": 8,
+  "maxUpdateSeconds": 18,
+  "purchaseCombos": [
+    {
+      "model": ["2060", "super"],
+      "price": "320"
+    },
+    {
+      "model": ["2070"],
+      "price": "320"
+    },
+    {
+      "model": ["2070", "super"],
+      "price": "340"
+    },
+    {
+      "model": ["3060"],
+      "price": "340"
+    }
+  ]
 }
