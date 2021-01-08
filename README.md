@@ -1,7 +1,8 @@
-# PC ALERTS
+# PcComponentes Outlet Bot
 
 Receive a Telegram message when a graphics card is back to stock!
 Currenly implemented just for PcComponentes.com (graphics card outlet section)
+- Branch available with modified purchase code (no credit card needed) from: https://github.com/elpatronaco/pccomponentes-buy-bot
 
 ---
 
@@ -52,7 +53,12 @@ Open the `config.json` file, then edit it with your settings.
 Open the `.env` file in the root folder, change the BOT_TOKEN and CHAT_ID strings to connect your Telegram account:
 
 - The BOT_TOKEN is provided by https://t.me/botfather, more info here: https://core.telegram.org/bots/api
-- The CHAT_ID is provided by
+- The CHAT_ID is provided after starting a chat with the Telegram bot.
+
+If using the Purchase branch, also add those strings in the .env file with your account: 
+
+    PCC_USER=username@mail.com
+    PCC_PASS=userpassword
 
 ## Running the project
 
