@@ -113,7 +113,7 @@ function updateData() {
     // List of items that match the requisites (each item is a string with price, name and URL)
     var matches: string[] = [];
 
-    json.child.forEach((element: any) => {
+    json?.child?.forEach((element: any) => {
       if (element.attr) {
         const price = element.attr["data-price"];
         const name = element.attr["data-name"].map((v: string) =>
