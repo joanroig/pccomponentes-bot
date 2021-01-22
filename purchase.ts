@@ -147,18 +147,23 @@ export default class Purchase {
 
     // Automatic scroll
     await driver
-      .findElements(By.className("tipopago5"))
+      .findElement(By.className("tipopago5"))
       .then(async (element) => {
-        driver.executeScript(
-          'arguments[0].scrollIntoView({behavior: "smooth"});',
-          element[0]
-        );
-        console.info("Scrolled!");
-        await this.sleep(1000).then((done) => {
-          // Click the inner element
-          element[0].findElement(By.className("c-input c-radio")).click();
-          console.info("Money transfer clicked!");
-        });
+        if (element) {
+          driver.executeScript(
+            'arguments[0].scrollIntoView({behavior: "smooth"});',
+            element
+          );
+          console.info("Scrolled!");
+          await this.sleep(1000).then((done) => {
+            // Click the inner element
+            element.findElement(By.className("c-input c-radio")).click();
+            console.info("Money transfer clicked!");
+          });
+        } else {
+          console.error("Couldn't find the payment box. :(");
+          return false;
+        }
       });
 
     await this.sleep(1000);
@@ -168,12 +173,18 @@ export default class Purchase {
     await driver
       .findElements(By.className("c-indicator margin-top-0"))
       .then((value) => value[0].click())
-      .catch((reason) => console.error(reason));
+      .catch((reason) => {
+        console.error(reason);
+        return false;
+      });
     await this.sleep(500);
     await driver
       .findElement(By.id("GTM-carrito-finalizarCompra"))
       .then((value) => value.click())
-      .catch(() => console.error("Couldn't click the buy button. :("));
+      .catch(() => {
+        console.error("Couldn't click the buy button. :(");
+        return false;
+      });
     console.info("PURCHASE SUCCESSFUL");
     await this.sleep(1000);
     return true;
