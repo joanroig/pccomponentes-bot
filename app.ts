@@ -6,6 +6,7 @@ const sanitizeHtml = require("sanitize-html");
 const { Telegraf } = require("telegraf");
 
 import { IncomingMessage, ServerResponse } from "http";
+import { exit } from "process";
 import Purchase from "./purchase";
 
 // Server configurations
@@ -28,6 +29,8 @@ var previous: string[] = [];
 var purchased: string[] = [];
 
 var purchase: Purchase;
+
+var buying = false;
 
 // Server startup
 const server = http.createServer(
@@ -136,13 +139,15 @@ function updateData() {
             // Check if it is an instant buy
             purchaseCombos.forEach((combo: any) => {
               if (
-                combo.price < price &&
+                !buying &&
+                combo.price > price &&
                 combo.model.every((v: string) => name.includes(v.toLowerCase()))
               ) {
                 if (!purchased.includes(link)) {
                   purchased.push(link);
                   console.warn("\n*Nice price, start the purchase!!!*");
                   console.warn(combo);
+                  buying = true;
 
                   purchase.run(link, combo.price, 8000).then((result) => {
                     if (result) {
@@ -150,6 +155,10 @@ function updateData() {
                         "\n------------\n*** PURCHASE FINISHED ***\n------------\n"
                       );
                       notify(getDate() + "\n\nPURCHASED!\n\n", [match]);
+                      exit(0);
+                    } else {
+                      console.warn("Purchase failed...");
+                      buying = false;
                     }
                   });
                 }

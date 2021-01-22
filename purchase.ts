@@ -102,7 +102,6 @@ export default class Purchase {
               if (price && price <= this.maxPrice) {
                 stock = true;
                 console.log(`PRODUCT IN STOCK! Starting buy process`);
-                this.sendSms("IN STOCK! ATTEMPTING TO BUY");
               } else {
                 console.log(
                   `Price is above max. Max price set - ${
@@ -118,31 +117,33 @@ export default class Purchase {
 
   async buyItem(driver: WebDriver) {
     await this.sleep(2000);
-    // check if there is a cookies modal to accept
+
     await driver
       .findElement(
-        By.className("btn btn-block btn-primary  btn-lg m-t-1 accept-cookie")
+        By.className("btn btn-block btn-primary btn-lg m-t-1 accept-cookie")
       )
       .then((value) => value.click())
       .catch(() => console.log("No cookie accept button to click"));
-    // clicks on buy button on product page
-    await driver
-      .findElement(By.xpath(`//*[@id="btnsWishAddBuy"]/button[3]`))
-      .then((value) => value.click())
-      .catch(() => console.log("Couldn't find any buy button"));
+
+    // clicks on buy button on product page. There are 3 buttons that show up depending on the current window size.
+    // the bot will attempt to click all of them
+    const buyButtons = await driver.findElements(By.className("buy-button"));
+    let clickedButton = false;
+    buyButtons.forEach(async (buyButton) => {
+      if (!clickedButton)
+        try {
+          await buyButton.click();
+          clickedButton = true;
+        } catch {
+          console.log("Buy button not found, attempting another one...");
+        }
+    });
+
     await this.sleep(3000);
     await driver
       .findElement(By.id("GTM-carrito-realizarPedidoPaso1"))
       .then((value) => value.click());
     await this.sleep(3000);
-
-    // // checks if the account has an added card, if not it adds he provided
-    // await driver.findElements(By.className('h5 card-name')).then(async value => {
-    //   if ((await value[0].getAttribute('outerText')) === 'Nombre aquí')
-    //     this.addCard !== undefined
-    //       ? await this.addCard(driver)
-    //       : console.error("Error: You have no card on you account and you didn't provide any")
-    // })
 
     // Automatic scroll
     await driver
@@ -153,7 +154,7 @@ export default class Purchase {
           element[0]
         );
         console.info("Scrolled!");
-        await this.sleep(1000).then((doneee) => {
+        await this.sleep(1000).then((done) => {
           // Click the inner element
           element[0].findElement(By.className("c-input c-radio")).click();
           console.info("Money transfer clicked!");
@@ -172,75 +173,10 @@ export default class Purchase {
     await driver
       .findElement(By.id("GTM-carrito-finalizarCompra"))
       .then((value) => value.click())
-      .catch(() => console.error("Couldn't click the buy button. FUUUUUCK"));
-    for (var i = 0; i < 2; i++) console.log("COMPRADO");
-    this.sendSms("DONE. CHECK YOUR ORDERS!");
+      .catch(() => console.error("Couldn't click the buy button. :("));
+    console.info("PURCHASE SUCCESSFUL");
     await this.sleep(1000);
     return true;
-  }
-
-  // async addCard(driver: WebDriver) {
-  //   await this.sleep(200)
-  //   // clicking add card button
-  //   await driver
-  //     .findElement(By.id('addNewCard'))
-  //     .then(value => value.click())
-  //     .catch(() => console.error("Didn't find the add card button"))
-  //   await this.sleep(2000)
-  //   const iFrames = await driver.findElements(By.className('js-iframe'))
-  //   /* let values: Array<Array<[ By, number | string]>> = [
-  //     [By.id('encryptedCardNumber'), this.card?.num!]
-  //   ] */
-  //   /* Card values are secured in 3 different IFrames,
-  //   we'll switch to each one and introduce the values */
-  //   await driver.switchTo().frame(iFrames[0])
-  //   await driver
-  //     .findElement(By.id('encryptedCardNumber'))
-  //     .then(value => value.sendKeys(parseInt(this.card?.num.trim()!, 10)))
-  //   await driver.switchTo().defaultContent()
-  //   //
-  //   await driver.switchTo().frame(iFrames[1])
-  //   await driver
-  //     .findElement(By.id('encryptedExpiryDate'))
-  //     .then(value => value.sendKeys(parseInt(this.card?.expiryDate.trim()!, 10)))
-  //   await driver.switchTo().defaultContent()
-  //   //
-  //   await driver.switchTo().frame(iFrames[2])
-  //   await driver
-  //     .findElement(By.id('encryptedSecurityCode'))
-  //     .then(value => value.sendKeys(parseInt(this.card?.cvc.trim()!, 10)))
-  //   await driver.switchTo().defaultContent()
-  //   //
-  //   await driver
-  //     .findElements(By.className('adyen-checkout__card__holderName__input'))
-  //     .then(value => value[0].sendKeys(this.card?.name.trim()!))
-  //   await this.sleep(500)
-  //   //
-  //   await driver
-  //     .findElements(By.className('adyen-checkout__button adyen-checkout__button--pay'))
-  //     .then(value => value[0].click())
-  //   await this.sleep(500)
-  // }
-
-  async sendSms(msg: string) {
-    // if (this.phone !== undefined)
-    //   try {
-    //     await fetch('https://rest-api.d7networks.com/secure/send', {
-    //       method: 'POST',
-    //       headers: {
-    //         'Content-Type': 'application/x-www-form-urlencoded',
-    //         Authorization: 'Basic aWlheTMyMjI6elIyNDVRVGY='
-    //       },
-    //       body: JSON.stringify({
-    //         // @ts-ignore
-    //         content: msg,
-    //         from: 'PCCOM-BOT',
-    //         to: this.phone!
-    //       })
-    //     }).then(() => console.log(`SMS sent successfully: ${msg}`))
-    //   } catch (err) {
-    //     console.error(`Couldn't send SMS: ${err}`)
-    //   }
   }
 
   async sleep(msec: number) {
