@@ -1,5 +1,5 @@
 {
-  "name": "pcalert",
+  "name": "pccomponentes-outlet-bot",
   "version": "1.1.0",
   "description": "",
   "main": "app.ts",
@@ -13,7 +13,7 @@
   "devDependencies": {
     "@types/node": "^15.0.2",
     "@types/node-fetch": "^2.5.10",
-    "eslint": "^7.12.1",
+    "eslint": "^7.26.0",
     "nodemon": "^2.0.7",
     "request": "^2.88.2"
   },
@@ -23,7 +23,7 @@
     "eslint-config-standard": "^16.0.2",
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-promise": "^5.1.0",
     "ghost-cursor": "^1.1.5",
     "html2json": "^1.0.2",
     "node-fetch": "^2.6.1",
