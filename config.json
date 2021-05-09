@@ -21,5 +21,25 @@
       "model": ["3060"],
       "price": "340"
     }
-  ]
+  ],
+  "debug": true,
+  "browserOptions": {
+    "headless": {
+      "headless": true,
+      "defaultViewport": null,
+      "ignoreHTTPSErrors": "true",
+      "args": [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-infobars",
+        "--ignore-certifcate-errors",
+        "--ignore-certifcate-errors-spki-list"
+      ]
+    },
+    "debug": {
+      "headless": false,
+      "args": ["--start-maximized"],
+      "defaultViewport": null
+    }
+  }
 }
