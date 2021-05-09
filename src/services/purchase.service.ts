@@ -1,31 +1,31 @@
 import chromedriver from "chromedriver";
-import { ICard, IData } from "./models";
-import webdriver, {
-  WebDriver,
-  Builder,
-  By,
-  Key,
-  Actions,
-} from "selenium-webdriver";
+import { Builder, By, Key, WebDriver } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome";
-import fetch from "node-fetch";
+import { Service } from "typedi";
+import { ICard } from "../models";
+
+// Import environment configurations
+require("dotenv").config();
 
 chrome.setDefaultService(new chrome.ServiceBuilder(chromedriver.path).build());
 
-export default class Purchase {
-  email: string;
-  password: string;
+@Service()
+export default class PurchaseService {
+  email: string = process.env.PCC_USER!;
+  password: string = process.env.PCC_PASS!;
   link: string = "";
   maxPrice: number = 100;
   card?: ICard;
   refreshRate: number = 100;
   phone?: string;
 
-  constructor({ email, password }: IData) {
-    (this.email = email), (this.password = password);
-  }
+  constructor() {}
 
   driver: any;
+
+  // setup({ email, password }: IData) {
+  //   (this.email = email), (this.password = password);
+  // }
 
   async prepare() {
     try {
