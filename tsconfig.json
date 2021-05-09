@@ -13,7 +13,7 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "files": ["app.ts"],
+  "files": ["src/app.ts"],
   // "include": ["src/*"],
   "exclude": ["node_modules/**/*"]
 }

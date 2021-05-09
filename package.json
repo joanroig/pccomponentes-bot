@@ -11,15 +11,20 @@
   "license": "ISC",
   "devDependencies": {
     "@types/chromedriver": "^81.0.0",
-    "@types/selenium-webdriver": "^4.0.12",
     "@types/node": "^15.0.2",
     "@types/node-fetch": "^2.5.10",
+    "@types/selenium-webdriver": "^4.0.12",
+    "eslint": "^7.12.1",
     "nodemon": "^2.0.7",
     "request": "^2.88.2"
   },
   "dependencies": {
     "chromedriver": "^90.0.0",
     "dotenv": "^9.0.1",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
     "html2json": "^1.0.2",
     "node-fetch": "^2.6.1",
     "sanitize-html": "^2.3.3",
