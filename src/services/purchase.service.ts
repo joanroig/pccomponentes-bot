@@ -1,13 +1,20 @@
-import chromedriver from "chromedriver";
-import { Builder, By, Key, WebDriver } from "selenium-webdriver";
-import chrome from "selenium-webdriver/chrome";
+import { Browser } from "puppeteer";
+import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import { By, WebDriver } from "selenium-webdriver";
+// import chrome from "selenium-webdriver/chrome";
 import { Service } from "typedi";
+import * as config from "../../config.json";
 import { ICard } from "../models";
+import Utils from "../utils";
+const puppeteer = require("puppeteer-extra");
+const { randomNumberRange } = require("ghost-cursor/lib/math");
+const { createCursor, getRandomPagePoint } = require("ghost-cursor");
 
 // Import environment configurations
 require("dotenv").config();
 
-chrome.setDefaultService(new chrome.ServiceBuilder(chromedriver.path).build());
+// chrome.setDefaultService(new chrome.ServiceBuilder(chromedriver.path).build());
 
 @Service()
 export default class PurchaseService {
@@ -21,53 +28,158 @@ export default class PurchaseService {
 
   constructor() {}
 
-  driver: any;
+  // driver: any;
 
   // setup({ email, password }: IData) {
   //   (this.email = email), (this.password = password);
   // }
 
   async prepare() {
-    try {
-      this.driver = await new Builder().forBrowser("chrome").build();
-      this.sleep(1000);
-      return await this.login(this.driver);
-    } catch (err) {
-      console.error("ERROR NOT CAUGHT WHILE RUNNING BOT. MORE INFO BELOW");
-      console.error(err);
-    }
+    puppeteer.use(StealthPlugin());
+    puppeteer.use(AdblockerPlugin());
+
+    // const browser = await puppeteer.launch(
+    //   data.debug ? data.browserOptions.debug : data.browserOptions.headless
+    // );
+
+    // Puppeteer.LaunchOptions
+
+    // let options = LaunchOptions();
+
+    let configData = config.debug
+      ? config.browserOptions.debug
+      : config.browserOptions.headless;
+
+    const browser = await puppeteer.launch(configData);
+    // const browser = await puppeteer.launch();
+    return await this.login(browser, config.debug);
+    // const page = await browser.newPage();
+    // await page.goto("https://google.com");
+    // await page.pdf({ path: "google.pdf" });
+
+    // await browser.close();
+
+    // try {
+    //   this.driver = await new Builder().forBrowser("chrome").build();
+    //   this.sleep(1000);
+    //   return await this.login(this.driver);
+    // } catch (err) {
+    //   console.error("ERROR NOT CAUGHT WHILE RUNNING BOT. MORE INFO BELOW");
+    //   console.error(err);
+    // }
   }
 
   async run(link: any, maxPrice: any, refreshRate: any) {
-    (this.link = link),
-      (this.maxPrice = maxPrice),
-      (this.refreshRate = refreshRate);
-    try {
-      await this.runItem(this.driver);
-      return await this.buyItem(this.driver);
-    } catch (err) {
-      console.error("ERROR NOT CAUGHT WHILE RUNNING BOT. MORE INFO BELOW");
-      console.error(err);
-    }
+    // (this.link = link),
+    //   (this.maxPrice = maxPrice),
+    //   (this.refreshRate = refreshRate);
+    // try {
+    //   await this.runItem(this.driver);
+    //   return await this.buyItem(this.driver);
+    // } catch (err) {
+    //   console.error("ERROR NOT CAUGHT WHILE RUNNING BOT. MORE INFO BELOW");
+    //   console.error(err);
+    // }
   }
 
-  async login(driver: WebDriver) {
-    await driver
-      .navigate()
-      .to("https://www.pccomponentes.com/login")
-      .then(async () => {
-        // this fills the form and logs in
-        await driver
-          .findElement(By.css("input[data-cy='email'"))
-          .then((value) => value.sendKeys(this.email.trim()));
-        await driver
-          .findElement(By.css("input[data-cy='password'"))
-          .then((value) => value.sendKeys(this.password.trim(), Key.RETURN));
-        await this.sleep(3000);
-        // await driver.findElement(By.css("button[data-cy='log-in']")).then(value => value.click())
-      });
+  async login(browser: Browser, debug: boolean) {
+    const loginPage = debug
+      ? await browser.newPage()
+      : await this.createHeadlessPage(browser);
+
+    console.log("Attempting login");
+
+    await loginPage.goto("https://www.pccomponentes.com/login", {
+      waitUntil: "networkidle2",
+    });
+
+    await loginPage.waitForTimeout(randomNumberRange(1000, 3000));
+
+    const cursor = createCursor(loginPage, await getRandomPagePoint(loginPage));
+
+    await cursor.click("input[data-cy='email']", {
+      waitForClick: randomNumberRange(1000, 3000),
+      moveDelay: randomNumberRange(1000, 3000),
+      paddingPercentage: 20,
+    });
+    await Utils.humanType(loginPage, this.email.trim());
+
+    await cursor.click("input[data-cy='password']", {
+      waitForClick: randomNumberRange(1000, 3000),
+      moveDelay: randomNumberRange(1000, 3000),
+      paddingPercentage: 20,
+    });
+    await Utils.humanType(loginPage, this.password.trim());
+
+    await cursor.click("button[data-cy='log-in']", {
+      waitForClick: randomNumberRange(1000, 3000),
+      moveDelay: randomNumberRange(1000, 3000),
+      paddingPercentage: 20,
+    });
+
+    await loginPage.waitForTimeout(10000);
+
+    let success = loginPage.url().includes("https://www.pccomponentes.com/");
+
+    // const loginResult = await require(path.join(__dirname, store, "login"))(
+    //   loginPage,
+    //   {
+    //     email: data[store].email,
+    //     password: data[store].password,
+    //   }
+    // );
+
+    if (success)
+      console.log(
+        // chalk.green(
+        `Successfully logged in!`
+        // )
+      );
+    else {
+      console.error(
+        // chalk.red(
+        `Login failed. Check your credentials`
+        // )
+      );
+      process.exit(1);
+    }
+
+    await loginPage.close();
+
+    // await driver
+    //   .navigate()
+    //   .to("https://www.pccomponentes.com/login")
+    //   .then(async () => {
+    //     // this fills the form and logs in
+    //     await driver
+    //       .findElement(By.css("input[data-cy='email'"))
+    //       .then((value) => value.sendKeys(this.email.trim()));
+    //     await driver
+    //       .findElement(By.css("input[data-cy='password'"))
+    //       .then((value) => value.sendKeys(this.password.trim(), Key.RETURN));
+    //     await this.sleep(3000);
+    //     // await driver.findElement(By.css("button[data-cy='log-in']")).then(value => value.click())
+    //   });
     console.log(`Successfully logged in as ${this.email}`);
     return true;
+  }
+
+  async createHeadlessPage(browser: Browser) {
+    const page = await browser.newPage();
+
+    // if (store === "amazon") page.setViewPort({ width: randomNumberRange(800, 1920), height: randomNumberRange(600, 1080) })
+
+    const headlessUserAgent = await page.evaluate(() => navigator.userAgent);
+    const chromeUserAgent = headlessUserAgent.replace(
+      "HeadlessChrome",
+      "Chrome"
+    );
+    await page.setUserAgent(chromeUserAgent);
+    await page.setExtraHTTPHeaders({
+      "accept-language": "es-ES,es;q=0.8",
+    });
+
+    return page;
   }
 
   async runItem(driver: WebDriver) {
