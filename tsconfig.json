@@ -2,6 +2,8 @@
   "compileOnSave": true,
   "compilerOptions": {
     "module": "CommonJS",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -13,7 +15,10 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "files": ["src/app.ts"],
-  // "include": ["src/*"],
-  "exclude": ["node_modules/**/*"]
+  "typeAcquisition": {
+    "enable": true
+  },
+  // "files": ["src/app.ts"],
+  "include": ["src/*"],
+  "exclude": ["node_modules"]
 }
