@@ -15,7 +15,7 @@ const port = 3000;
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 // Read values from the configuration file
-const config = require("./config.json");
+const config = require("../config.json");
 const url = config.url;
 const maxPrice = config.maxPrice;
 const models = config.models;
