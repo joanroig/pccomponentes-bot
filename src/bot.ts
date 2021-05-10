@@ -1,166 +1,95 @@
-// Read values from the configuration file
-// const config = require("../config.json");
+import { Browser } from "puppeteer";
+import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { Service } from "typedi";
 import * as config from "../config.json";
+import Log from "./utils/log";
+import ProductTracker from "./product-tracker";
+import * as puppeteerConfig from "./puppeteer-config.json";
 import NotifyService from "./services/notify.service";
 import PurchaseService from "./services/purchase.service";
 
-const url = config.url;
-const maxPrice = config.maxPrice;
-const models = config.models;
-const minUpdateSeconds = config.minUpdateSeconds;
-const maxUpdateSeconds = config.maxUpdateSeconds;
-const purchaseCombos = config.purchaseCombos;
-var request = require("request");
-const sanitizeHtml = require("sanitize-html");
-var html2json = require("html2json").html2json;
+const puppeteer = require("puppeteer-extra");
 
 @Service()
 export default class Bot {
   // Global variables
-  private firstTime = true;
-  private previous: string[] = [];
-  private purchased: string[] = [];
-  private buying = false;
+
+  private purchase = config.purchase;
+  private debug = puppeteerConfig.debug;
+  private browser!: Browser;
+
+  private trackers: Map<string, ProductTracker> = new Map<
+    string,
+    ProductTracker
+  >();
 
   constructor(
-    private readonly notify: NotifyService,
-    private readonly purchase: PurchaseService
+    private readonly notifyService: NotifyService,
+    private readonly purchaseService: PurchaseService
   ) {}
 
+  async prepare() {
+    puppeteer.use(StealthPlugin());
+    puppeteer.use(AdblockerPlugin());
+
+    let configData = this.debug
+      ? puppeteerConfig.browserOptions.debug
+      : puppeteerConfig.browserOptions.headless;
+
+    this.browser = await puppeteer.launch(configData);
+    if (this.purchase) {
+      return await this.purchaseService.login(this.browser, this.debug);
+    }
+  }
+
   start() {
-    // Setup the telegram bot
-    this.notify.startTelegram();
+    Log.breakline();
+    Log.info("Current configuration:");
+    Log.breakline();
+    if (config.notify) {
+      Log.config("Notifications enabled.", true);
+      // Setup the telegram bot
+      this.notifyService.startTelegram();
+      this.notifyService.getRequestUpdates().subscribe((update) => {
+        if (update) {
+          // this.updateData();
+        }
+      });
+    } else {
+      Log.config("Notifications disabled.", false);
+    }
+    if (config.purchase) {
+      Log.config("Purchase enabled, but still not implemented.", false);
+    } else {
+      Log.config("Purchase disabled.", false);
+    }
 
-    // purchase = new Purchase({
-    //   email: process.env.PCC_USER!,
-    //   password: process.env.PCC_PASS!,
-    // });
-    this.purchase.prepare().then((ready) => {
-      // First iteration
-      this.updateData();
+    this.prepare().then((ready) => {
+      Log.breakline();
 
-      // Infinite loop
-      this.loop();
+      // Create a tracker for each product to track
+      for (const [key, value] of Object.entries(config.products)) {
+        let tracker = new ProductTracker(
+          key,
+          value,
+          this.browser,
+          this.purchase,
+          this.debug
+        );
+        this.trackers.set(key, tracker);
+        Log.success(`${key}: Product tracker started.`);
+      }
 
-      // console.log(`Server running at http://${hostname}:${port}/`);
+      Log.breakline();
+      Log.config(
+        "-------------------\n*** BOT STARTED ***\n-------------------\n",
+        true
+      );
+
+      this.notifyService.notify(
+        "BOT STARTED\nTelegram commands you can write here:\n\n'hi' - Will tell you if the bot is running\n'refresh' - Will force a refresh of all tracker."
+      );
     });
-  }
-
-  // Infinite loop with a pseudo-random timeout to fetch data imitating a human behaviour
-  loop() {
-    // Math.random() * (max - min + 1) + min); // Generate a number in a range
-    var rand =
-      Math.round(
-        Math.random() * (maxUpdateSeconds * 1000 - minUpdateSeconds * 1000 + 1)
-      ) +
-      minUpdateSeconds * 1000;
-    setTimeout(() => {
-      this.updateData();
-      this.loop();
-    }, rand);
-  }
-
-  updateData() {
-    // request(url, (err: any, res: any, body: any) => {
-    //   // Allow only a super restricted set of tags and attributes to clean the HTML
-    //   const clean = sanitizeHtml(body, {
-    //     allowedTags: ["article", "a"],
-    //     allowedAttributes: {
-    //       article: ["data-price", "data-name"],
-    //       a: ["href"],
-    //     },
-    //   });
-    //   // Convert the cleaned HTML output to JSON objects
-    //   const json = html2json(clean);
-    //   // console.log(json)
-    //   // List of items that match the requisites (each item is a string with price, name and URL)
-    //   var matches: string[] = [];
-    //   json?.child?.forEach((element: any) => {
-    //     if (element.attr) {
-    //       const price = element.attr["data-price"];
-    //       const name = element.attr["data-name"].map((v: string) =>
-    //         v.toLowerCase()
-    //       );
-    //       // Check if the price is in range
-    //       if (element.tag === "article" && price < maxPrice) {
-    //         // Check if any of the models are in the title of the product
-    //         if (models.some((el: string) => name.includes(el.toLowerCase()))) {
-    //           //  Build link, name and price of the product in a single string
-    //           let link =
-    //             "https://www.pccomponentes.com" +
-    //             element.child.find((link: any) => link.tag === "a").attr.href;
-    //           let nameText = "[" + name.join([" "]) + "](" + link + ")";
-    //           let priceText = "*" + price + " EUR*";
-    //           let match = priceText + "\n" + nameText;
-    //           // Check if it is an instant buy
-    //           purchaseCombos.forEach((combo: any) => {
-    //             if (
-    //               !this.buying &&
-    //               combo.price > price &&
-    //               combo.model.every((v: string) =>
-    //                 name.includes(v.toLowerCase())
-    //               )
-    //             ) {
-    //               if (!this.purchased.includes(link)) {
-    //                 this.purchased.push(link);
-    //                 console.warn("\n*Nice price, start the purchase!!!*");
-    //                 console.warn(combo);
-    //                 this.buying = true;
-    //                 this.purchase
-    //                   .run(link, combo.price, 8000)
-    //                   .then((result) => {
-    //                     if (result) {
-    //                       console.warn(
-    //                         "\n------------\n*** PURCHASE FINISHED ***\n------------\n"
-    //                       );
-    //                       this.notify.notify(
-    //                         Utils.getDate() + "\n\nPURCHASED!\n\n",
-    //                         [match]
-    //                       );
-    //                       process.exit();
-    //                     } else {
-    //                       console.warn("Purchase failed...");
-    //                       this.buying = false;
-    //                     }
-    //                   });
-    //               }
-    //             }
-    //           });
-    //           // console.log(match)
-    //           matches.push(match);
-    //         }
-    //       }
-    //     }
-    //   });
-    //   // Check if there is any new card - we use difference to only get the new cards: https://stackoverflow.com/questions/1187518/how-to-get-the-difference-between-two-arrays-in-javascript
-    //   const difference = matches.filter((x) => !this.previous.includes(x));
-    //   if (this.firstTime) {
-    //     // First update
-    //     console.log(
-    //       "\n" + Utils.getDate() + "\nBot started! Start tracking cards:"
-    //     );
-    //     console.log(difference);
-    //     this.notify.notify(
-    //       Utils.getDate() +
-    //         "\n\nBOT STARTED\nCommands: 'all', 'refresh'.\nFound cards:",
-    //       difference
-    //     );
-    //     this.firstTime = false;
-    //   } else if (difference.length > 0) {
-    //     // New cards found!
-    //     console.log("\n" + Utils.getDate() + "\nNew cards found!:");
-    //     console.log(difference);
-    //     this.notify.notify(
-    //       Utils.getDate() + "\n\nNEW CARDS FOUND!:",
-    //       difference
-    //     );
-    //   } else {
-    //     console.log("\n" + Utils.getDate() + "\nNo new cards found...");
-    //     // notify(Utils.getDate() + "\n\nno new cards...");
-    //   }
-    //   // Update previous
-    //   this.previous = matches;
-    // });
   }
 }
