@@ -19,6 +19,6 @@
     "enable": true
   },
   // "files": ["src/app.ts"],
-  "include": ["src/*"],
+  "include": ["src/*", "src/utils/log.ts"],
   "exclude": ["node_modules"]
 }

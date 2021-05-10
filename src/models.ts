@@ -1,16 +1,21 @@
-export interface IData {
-  email: string;
-  password: string;
-  // link: string
-  // maxPrice: number
-  // refreshRate: number
-  // phone?: string
-  // card?: ICard
+export interface ProductModel {
+  name: string;
+  price: number;
+  link: string;
+  match: string;
 }
 
-export interface ICard {
-  num: string;
-  expiryDate: string;
-  cvc: string;
-  name: string;
+export interface ProductConfigModel {
+  url: string;
+  models: string[];
+  minUpdateSeconds: number;
+  maxUpdateSeconds: number;
+  maxPrice: number;
+  purchaseMultiple: boolean;
+  purchaseConditions?: PurchaseConditionsModel[];
+}
+
+export interface PurchaseConditionsModel {
+  variant: string[];
+  price: number;
 }

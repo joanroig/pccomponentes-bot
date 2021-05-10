@@ -1,6 +1,8 @@
 {
   "name": "pccomponentes-outlet-bot",
-  "version": "1.1.0",
+  "version": "1.2.0",
+  "author": "Joan Roig",
+  "license": "ISC",
   "description": "",
   "main": "app.ts",
   "scripts": {
@@ -8,8 +10,6 @@
     "dev": "nodemon src/app.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "@types/node": "^15.0.2",
     "@types/node-fetch": "^2.5.10",
@@ -18,8 +18,10 @@
     "request": "^2.88.2"
   },
   "dependencies": {
+    "axios": "^0.21.1",
+    "chalk": "^4.1.1",
     "chromedriver": "^90.0.0",
-    "dotenv": "^9.0.1",
+    "dotenv": "^9.0.2",
     "eslint-config-standard": "^16.0.2",
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-node": "^11.1.0",

@@ -1,9 +1,12 @@
 # PcComponentes Outlet Bot
 
-Receive a Telegram message when a graphics card is back to stock!
-Currenly implemented for the outlet section of PcComponentes.com
+Receive a Telegram message when a product is back to stock!
+Implemented for the outlet section of PcComponentes.com, useful for tracking:
 
-New: Experimental automatic purchase available (no credit card needed) with adapted code from: https://github.com/elpatronaco/pccomponentes-buy-bot
+- Graphic cards
+- Processors
+
+In progress: Automatic purchase (no credit card needed).
 
 > ⚠️ Disclaimer: Please note that this is a research project. I am by no means responsible for any usage of this tool. Use it on your behalf.
 
@@ -62,15 +65,16 @@ If the installation was successful, you should be able to run the following comm
     $ cd pcalerts
     $ yarn
 
-## Configure app
+## Configure bot
 
-Open the `config.json` file, then edit it with your settings.
+Open the `config.json` file, then edit it with your settings. Use the files in the `examples` folder as a reference.
+
 Open the `.env` file in the root folder, change the BOT_TOKEN and CHAT_ID strings to connect your Telegram account:
 
 - The BOT_TOKEN is provided by https://t.me/botfather, more info here: https://core.telegram.org/bots/api
 - The CHAT_ID is provided after starting a chat with the Telegram bot.
 
-If using the Purchase branch, also add those strings in the .env file with your account:
+If you enable the purchase mode, add those strings in the .env file with your account credentials:
 
     PCC_USER=username@mail.com
     PCC_PASS=userpassword
@@ -80,3 +84,9 @@ If using the Purchase branch, also add those strings in the .env file with your 
     $ yarn start
 
 Or easier if using a Raspberry (maybe chmod + x is needed), double click: `run_raspberry.sh`
+
+---
+
+## Credits
+
+This project uses modified code from: https://github.com/elpatronaco/pccomponentes-buy-bot
