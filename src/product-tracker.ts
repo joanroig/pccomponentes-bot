@@ -1,6 +1,5 @@
 import { Browser, Page } from "puppeteer";
 import Container from "typedi";
-import Log from "./utils/log";
 import {
   ProductConfigModel,
   ProductModel,
@@ -8,10 +7,12 @@ import {
 } from "./models";
 import NotifyService from "./services/notify.service";
 import PurchaseService from "./services/purchase.service";
+import Log from "./utils/log";
 import Utils from "./utils/utils";
 
 const sanitizeHtml = require("sanitize-html");
 var html2json = require("html2json").html2json;
+const puppeteer = require("puppeteer-extra");
 
 /**
  * Instantiable class that will take care of tracking a product, send notifications and purchasing it if needed.
@@ -84,6 +85,13 @@ export default class ProductTracker {
   }
 
   async update() {
+    if (!this.browser.isConnected()) {
+      Log.critical("Browser is disconnected!");
+      return;
+      // const endpoint = await browser.wsEndpoint();
+      // await puppeteer.connect({ browserWSEndpoint: "ws://some_string" });
+    }
+
     // Relaunch page if it is closed
     if (this.page.isClosed()) {
       await this.newPage();
