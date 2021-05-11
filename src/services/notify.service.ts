@@ -1,6 +1,7 @@
 import { Subject } from "rxjs";
 import { Telegraf } from "telegraf";
 import { Service } from "typedi";
+import Log from "../utils/log";
 
 @Service()
 export default class NotifyService {
@@ -32,10 +33,12 @@ export default class NotifyService {
     });
     telegraf.hears(["Hi", "hi", "Hello", "hello"], (ctx: any) => {
       this.notify("The bot is running.");
+      Log.important("Telegram: Greeting command received.");
     });
     telegraf.hears(["Update", "update", "Refresh", "refresh"], (ctx: any) => {
       this.requestUpdate.next(true);
       this.notify("Data refresh requested.");
+      Log.important("Telegram: Data refresh command received.");
     });
     telegraf.launch();
 

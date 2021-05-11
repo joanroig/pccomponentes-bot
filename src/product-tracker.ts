@@ -26,14 +26,14 @@ export default class ProductTracker {
   private debug: boolean;
   private purchase: boolean;
 
-  // Inject needed services
-  private readonly purchaseService = Container.get(PurchaseService);
-  private readonly notifyService = Container.get(NotifyService);
-
   private previous: string[] = [];
   private purchased: string[] = [];
   private buying = false;
   private page!: Page;
+
+  // Inject needed services
+  private readonly purchaseService = Container.get(PurchaseService);
+  private readonly notifyService = Container.get(NotifyService);
 
   constructor(
     id: string,
@@ -61,6 +61,11 @@ export default class ProductTracker {
     this.loop();
   }
 
+  reconnect(browser: Browser) {
+    this.browser = browser;
+    this.newPage();
+  }
+
   async newPage() {
     this.page = this.debug
       ? await this.browser.newPage()
@@ -86,10 +91,8 @@ export default class ProductTracker {
 
   async update() {
     if (!this.browser.isConnected()) {
-      Log.critical("Browser is disconnected!");
+      Log.critical(`'${this.id} tracker' - Browser is disconnected!`, true);
       return;
-      // const endpoint = await browser.wsEndpoint();
-      // await puppeteer.connect({ browserWSEndpoint: "ws://some_string" });
     }
 
     // Relaunch page if it is closed
@@ -97,9 +100,14 @@ export default class ProductTracker {
       await this.newPage();
     }
 
-    await this.page.goto(this.config.url, {
-      waitUntil: "networkidle2",
-    });
+    try {
+      await this.page.goto(this.config.url, {
+        waitUntil: "networkidle2",
+      });
+    } catch (error) {
+      Log.critical(`'${this.id} tracker' - ${error}`, true);
+      return;
+    }
 
     let bodyHTML = await this.page.evaluate(() => document.body.innerHTML);
 
@@ -160,7 +168,6 @@ export default class ProductTracker {
                 );
               }
             }
-
             matches.push(match);
           }
         }
@@ -171,13 +178,16 @@ export default class ProductTracker {
     const difference = matches.filter((x) => !this.previous.includes(x));
     if (difference.length > 0) {
       Log.breakline();
-      Log.success(`'${this.id}' - Products found:`, true);
+      Log.success(`'${this.id} tracker' - Products found:`, true);
       Log.important("\n" + difference.join("\n"));
       Log.breakline();
 
-      this.notifyService.notify(`'${this.id}' - PRODUCTS FOUND:`, difference);
+      this.notifyService.notify(
+        `'${this.id} tracker' - PRODUCTS FOUND:`,
+        difference
+      );
     } else {
-      Log.info(`'${this.id}' - No new products found...`, true);
+      Log.info(`'${this.id} tracker' - No new products found...`, true);
     }
     // Update previous
     this.previous = matches;
