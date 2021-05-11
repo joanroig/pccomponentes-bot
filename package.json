@@ -3,7 +3,7 @@
   "version": "1.2.0",
   "author": "Joan Roig",
   "license": "ISC",
-  "description": "",
+  "description": "Bot for the PcComponentes outlet, it sends Telegram messages and can do automatic purchases. Useful for tracking graphics cards, processors, etc.",
   "main": "app.ts",
   "scripts": {
     "start": "ts-node src/app.ts",
