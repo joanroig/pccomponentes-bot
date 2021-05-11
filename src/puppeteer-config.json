@@ -16,7 +16,8 @@
     "debug": {
       "headless": false,
       "args": ["--start-maximized"],
-      "defaultViewport": null
+      "defaultViewport": null,
+      "ignoreHTTPSErrors": "true"
     }
   }
 }

@@ -13,31 +13,34 @@ const puppeteer = require("puppeteer-extra");
 
 @Service()
 export default class Bot {
-  // Global variables
-
   private purchase = config.purchase;
   private debug = puppeteerConfig.debug;
   private browser!: Browser;
 
-  private trackers: Map<string, ProductTracker> = new Map<
-    string,
-    ProductTracker
-  >();
+  private trackers = new Map<string, ProductTracker>();
 
   constructor(
     private readonly notifyService: NotifyService,
     private readonly purchaseService: PurchaseService
-  ) {}
-
-  async prepare() {
+  ) {
+    // Setup plugins (only once, do not put this in the prepareBrowser method!)
     puppeteer.use(StealthPlugin());
     puppeteer.use(AdblockerPlugin());
+  }
 
+  async prepareBrowser() {
     let configData = this.debug
       ? puppeteerConfig.browserOptions.debug
       : puppeteerConfig.browserOptions.headless;
 
     this.browser = await puppeteer.launch(configData);
+    this.browser.on("disconnected", () => {
+      Log.error(
+        "Browser has been disconnected! Trying to reconnect all trackers..."
+      );
+      this.reconnectTrackers();
+    });
+
     if (this.purchase) {
       return await this.purchaseService.login(this.browser, this.debug);
     }
@@ -55,9 +58,7 @@ export default class Bot {
       // Setup the telegram bot
       this.notifyService.startTelegram();
       this.notifyService.getRequestUpdates().subscribe((update) => {
-        if (update) {
-          // this.updateData();
-        }
+        this.updateTrackers();
       });
     } else {
       Log.config("Notifications disabled.", false);
@@ -68,7 +69,7 @@ export default class Bot {
       Log.config("Purchase disabled.", false);
     }
 
-    this.prepare().then((ready) => {
+    this.prepareBrowser().then((ready) => {
       Log.breakline();
 
       // Create a tracker for each product to track
@@ -93,6 +94,33 @@ export default class Bot {
       this.notifyService.notify(
         "BOT STARTED\nTelegram commands you can write here:\n\n'hi' - Will tell you if the bot is running\n'refresh' - Will force a refresh of all tracker."
       );
+    });
+  }
+
+  updateTrackers() {
+    this.trackers.forEach((tracker, key) => {
+      if (tracker) {
+        tracker.update();
+      } else {
+        Log.error(
+          "Tracker could not be updated because it was not found: " + key
+        );
+      }
+    });
+  }
+
+  reconnectTrackers() {
+    this.prepareBrowser().then((ready) => {
+      this.trackers.forEach((tracker, key) => {
+        if (tracker) {
+          Log.important("Reconnecting tracker: " + key);
+          tracker.reconnect(this.browser);
+        } else {
+          Log.error(
+            "Tracker could not be reconnected because it was not found: " + key
+          );
+        }
+      });
     });
   }
 }
