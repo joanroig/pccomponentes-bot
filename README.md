@@ -10,8 +10,6 @@ In progress: Automatic purchase (no credit card needed).
 
 > ⚠️ Disclaimer: Please note that this is a research project. I am by no means responsible for any usage of this tool. Use it on your behalf.
 
----
-
 ## Requirements
 
 You will need Node.js and a node global package installed in your environement. Yarn is recommended as a package manager and script runner over npm.
@@ -57,8 +55,6 @@ If the installation was successful, you should be able to run the following comm
     $ yarn --version
     1.22.10
 
----
-
 ## Install
 
     $ git clone https://github.com/joanroig/pcalerts
@@ -83,9 +79,7 @@ If you enable the purchase mode, add those strings in the .env file with your ac
 
     $ yarn start
 
-Or easier if using a Raspberry (maybe chmod + x is needed), double click: `run_raspberry.sh`
-
----
+To run it on a Raspberry (maybe chmod + x is needed), you can also execute: `run_raspberry.sh`
 
 ## Credits
 
