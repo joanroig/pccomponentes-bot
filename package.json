@@ -20,7 +20,6 @@
   "dependencies": {
     "axios": "^0.21.1",
     "chalk": "^4.1.1",
-    "chromedriver": "^90.0.0",
     "dotenv": "^9.0.2",
     "eslint-config-standard": "^16.0.2",
     "eslint-plugin-import": "^2.22.1",
@@ -37,7 +36,6 @@
     "rxjs": "^7.0.0",
     "sanitize-html": "^2.3.3",
     "scrape-it": "^5.3.1",
-    "selenium-webdriver": "^4.0.0-beta.3",
     "telegraf": "^4.3.0",
     "ts-node": "^9.1.1",
     "typedi": "^0.10.0",

@@ -3,11 +3,11 @@ import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { Service } from "typedi";
 import * as config from "../config.json";
-import Log from "./utils/log";
 import ProductTracker from "./product-tracker";
 import * as puppeteerConfig from "./puppeteer-config.json";
 import NotifyService from "./services/notify.service";
 import PurchaseService from "./services/purchase.service";
+import Log from "./utils/log";
 
 const puppeteer = require("puppeteer-extra");
 
@@ -44,6 +44,9 @@ export default class Bot {
   }
 
   start() {
+    Log.breakline();
+    Log.info("Starting " + process.env.npm_package_name);
+    Log.info("Version " + process.env.npm_package_version);
     Log.breakline();
     Log.info("Current configuration:");
     Log.breakline();

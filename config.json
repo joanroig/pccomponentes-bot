@@ -2,12 +2,12 @@
   "notify": true,
   "purchase": false,
   "products": {
-    "gpus": {
+    "GPUs": {
       "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6&page=0&order=price-asc",
-      "models": ["2060", "2070", "3060", "3060ti", "970"],
+      "models": ["2060", "2070", "3060", "3070"],
       "minUpdateSeconds": 8,
       "maxUpdateSeconds": 18,
-      "maxPrice": 600,
+      "maxPrice": 500,
       "purchaseMultiple": false,
       "purchaseConditions": [
         {
@@ -25,6 +25,28 @@
         {
           "variant": ["3060"],
           "price": 340
+        },
+        {
+          "variant": ["3070"],
+          "price": 340
+        }
+      ]
+    },
+    "CPUs": {
+      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=4&page=0&order=price-asc",
+      "models": ["5800x", "5900x"],
+      "minUpdateSeconds": 15,
+      "maxUpdateSeconds": 30,
+      "maxPrice": 600,
+      "purchaseMultiple": false,
+      "purchaseConditions": [
+        {
+          "variant": ["5800x"],
+          "price": 420
+        },
+        {
+          "variant": ["5900x"],
+          "price": 500
         }
       ]
     }
