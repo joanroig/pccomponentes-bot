@@ -9,6 +9,9 @@ import NotifyService from "./services/notify.service";
 import PurchaseService from "./services/purchase.service";
 import Log from "./utils/log";
 
+// Import environment configurations
+require("dotenv").config();
+
 const puppeteer = require("puppeteer-extra");
 
 @Service()
@@ -61,7 +64,7 @@ export default class Bot {
 
   start() {
     Log.breakline();
-    Log.info("Starting " + process.env.npm_package_name);
+    Log.info(process.env.npm_package_name);
     Log.info("Version " + process.env.npm_package_version);
     Log.breakline();
     Log.info("Current configuration:");
@@ -105,9 +108,7 @@ export default class Bot {
         true
       );
 
-      this.notifyService.notify(
-        "BOT STARTED\nTelegram commands you can write here:\n\n'hi' - Will tell you if the bot is running\n'refresh' - Will force a refresh of all tracker."
-      );
+      this.notifyService.startMessage();
     });
   }
 
