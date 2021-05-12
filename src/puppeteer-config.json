@@ -5,6 +5,7 @@
       "headless": true,
       "defaultViewport": null,
       "ignoreHTTPSErrors": "true",
+      "timeout": 16000,
       "args": [
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -17,7 +18,8 @@
       "headless": false,
       "args": ["--start-maximized"],
       "defaultViewport": null,
-      "ignoreHTTPSErrors": "true"
+      "ignoreHTTPSErrors": "true",
+      "timeout": 16000
     }
   }
 }

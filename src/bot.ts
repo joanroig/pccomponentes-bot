@@ -13,11 +13,11 @@ const puppeteer = require("puppeteer-extra");
 
 @Service()
 export default class Bot {
-  private purchase = config.purchase;
-  private debug = puppeteerConfig.debug;
+  private readonly purchase = config.purchase;
+  private readonly debug = puppeteerConfig.debug;
   private browser!: Browser;
 
-  private trackers = new Map<string, ProductTracker>();
+  private readonly trackers = new Map<string, ProductTracker>();
 
   constructor(
     private readonly notifyService: NotifyService,
@@ -29,20 +29,33 @@ export default class Bot {
   }
 
   async prepareBrowser() {
-    let configData = this.debug
+    Log.breakline();
+    Log.info("Preparing browser...");
+
+    const configData = this.debug
       ? puppeteerConfig.browserOptions.debug
       : puppeteerConfig.browserOptions.headless;
 
-    this.browser = await puppeteer.launch(configData);
+    try {
+      this.browser = await puppeteer.launch(configData);
+    } catch (error) {
+      Log.critical("Browser cannot be launched: " + error);
+      process.exit(1);
+    }
+
     this.browser.on("disconnected", () => {
-      Log.error(
-        "Browser has been disconnected! Trying to reconnect all trackers..."
-      );
+      Log.error("Browser has been disconnected! Trying to reconnect...");
       this.reconnectTrackers();
     });
 
+    Log.success(`Browser ready!`);
+
     if (this.purchase) {
-      return await this.purchaseService.login(this.browser, this.debug);
+      try {
+        await this.purchaseService.login(this.browser, this.debug);
+      } catch (error) {
+        Log.error("Exception thrown while logging in: " + error);
+      }
     }
   }
 
@@ -71,10 +84,11 @@ export default class Bot {
 
     this.prepareBrowser().then((ready) => {
       Log.breakline();
+      Log.info("Preparing trackers...");
 
       // Create a tracker for each product to track
       for (const [key, value] of Object.entries(config.products)) {
-        let tracker = new ProductTracker(
+        const tracker = new ProductTracker(
           key,
           value,
           this.browser,
@@ -111,6 +125,7 @@ export default class Bot {
 
   reconnectTrackers() {
     this.prepareBrowser().then((ready) => {
+      Log.breakline();
       this.trackers.forEach((tracker, key) => {
         if (tracker) {
           Log.important("Reconnecting tracker: " + key);
@@ -121,6 +136,7 @@ export default class Bot {
           );
         }
       });
+      Log.breakline();
     });
   }
 }

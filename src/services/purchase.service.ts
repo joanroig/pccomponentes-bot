@@ -2,6 +2,7 @@ import { Browser } from "puppeteer";
 import { Service } from "typedi";
 import Log from "../utils/log";
 import Utils from "../utils/utils";
+import NotifyService from "./notify.service";
 const { randomNumberRange } = require("ghost-cursor/lib/math");
 const { createCursor, getRandomPagePoint } = require("ghost-cursor");
 
@@ -17,7 +18,7 @@ export default class PurchaseService {
   refreshRate: number = 0;
   phone?: string;
 
-  constructor() {}
+  constructor(private readonly notifyService: NotifyService) {}
 
   async run(link: any, maxPrice: any, refreshRate: any) {
     // (this.link = link),
@@ -70,12 +71,15 @@ export default class PurchaseService {
 
     await loginPage.waitForTimeout(10000);
 
-    let success = loginPage.url().includes("https://www.pccomponentes.com/");
+    let success = !loginPage.url().includes("pccomponentes.com/login");
 
     if (success) {
       Log.success("Successfully logged in!");
     } else {
       Log.critical("Login failed. Check your credentials.");
+      this.notifyService.notify(
+        `Login attempt failed, check the credentials. Bot stopped.`
+      );
       process.exit(1);
     }
 

@@ -1,5 +1,4 @@
 import { Browser, Page } from "puppeteer";
-
 const { randomNumberRange } = require("ghost-cursor/lib/math");
 
 export default class Utils {
@@ -29,10 +28,15 @@ export default class Utils {
     }
   };
 
+  static randomTimeout(minUpdateSeconds: number, maxUpdateSeconds: number) {
+    // Math.random() * (max - min + 1) + min); // Generate a number in a range
+    let min = minUpdateSeconds * 1000;
+    let max = maxUpdateSeconds * 1000;
+    return Math.round(Math.random() * (max - min + 1)) + min;
+  }
+
   static async createHeadlessPage(browser: Browser) {
     const page = await browser.newPage();
-
-    // if (store === "amazon") page.setViewPort({ width: randomNumberRange(800, 1920), height: randomNumberRange(600, 1080) })
 
     const headlessUserAgent = await page.evaluate(() => navigator.userAgent);
     const chromeUserAgent = headlessUserAgent.replace(
