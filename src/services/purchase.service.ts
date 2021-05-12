@@ -6,9 +6,6 @@ import NotifyService from "./notify.service";
 const { randomNumberRange } = require("ghost-cursor/lib/math");
 const { createCursor, getRandomPagePoint } = require("ghost-cursor");
 
-// Import environment configurations
-require("dotenv").config();
-
 @Service()
 export default class PurchaseService {
   email: string = process.env.PCC_USER!;
