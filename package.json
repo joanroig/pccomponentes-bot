@@ -8,12 +8,14 @@
   "scripts": {
     "start": "ts-node src/app.ts",
     "dev": "nodemon src/app.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "husky install"
   },
   "devDependencies": {
     "@types/node": "^15.0.2",
     "@types/node-fetch": "^2.5.10",
     "eslint": "^7.26.0",
+    "husky": "^6.0.0",
     "nodemon": "^2.0.7",
     "request": "^2.88.2"
   },
