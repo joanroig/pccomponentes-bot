@@ -1,10 +1,6 @@
 import { Browser, Page } from "puppeteer";
 import Container from "typedi";
-import {
-  ProductConfigModel,
-  ProductModel,
-  PurchaseConditionsModel,
-} from "./models";
+import { ProductConfigModel, ProductModel } from "./models";
 import NotifyService from "./services/notify.service";
 import PurchaseService from "./services/purchase.service";
 import Log from "./utils/log";
@@ -12,23 +8,23 @@ import Utils from "./utils/utils";
 
 const sanitizeHtml = require("sanitize-html");
 var html2json = require("html2json").html2json;
-const puppeteer = require("puppeteer-extra");
 
 /**
  * Instantiable class that will take care of tracking a product, send notifications and purchasing it if needed.
  */
 export default class ProductTracker {
-  private id: string;
+  private readonly id: string;
 
-  private config: ProductConfigModel;
+  private readonly config: ProductConfigModel;
   private browser: Browser;
 
-  private debug: boolean;
-  private purchase: boolean;
+  private readonly debug: boolean;
+  private readonly purchase: boolean;
 
   private previous: string[] = [];
-  private purchased: string[] = [];
+  private readonly purchased: string[] = [];
   private buying = false;
+  private done = false;
   private page!: Page;
 
   // Inject needed services
@@ -74,24 +70,26 @@ export default class ProductTracker {
 
   // Infinite loop with a pseudo-random timeout to fetch data imitating a human behaviour
   loop() {
-    // Math.random() * (max - min + 1) + min); // Generate a number in a range
-    var rand =
-      Math.round(
-        Math.random() *
-          (this.config.maxUpdateSeconds * 1000 -
-            this.config.minUpdateSeconds * 1000 +
-            1)
-      ) +
-      this.config.minUpdateSeconds * 1000;
+    if (this.done) {
+      Log.success(`'${this.id} tracker' - Stopped successfully.`, true);
+      return;
+    }
+
     setTimeout(() => {
       this.update();
       this.loop();
-    }, rand);
+    }, Utils.randomTimeout(this.config.minUpdateSeconds, this.config.maxUpdateSeconds));
   }
 
   async update() {
+    if (this.done) {
+      Log.important(`'${this.id} tracker' - Tracker is stopped.`, true);
+      this.notifyService.notify(`'${this.id} tracker' - Tracker is stopped.`);
+      return;
+    }
+
     if (!this.browser.isConnected()) {
-      Log.critical(`'${this.id} tracker' - Browser is disconnected!`, true);
+      Log.error(`'${this.id} tracker' - Browser is disconnected!`, true);
       return;
     }
 
@@ -105,11 +103,11 @@ export default class ProductTracker {
         waitUntil: "networkidle2",
       });
     } catch (error) {
-      Log.critical(`'${this.id} tracker' - ${error}`, true);
+      Log.error(`'${this.id} tracker' - Page error: ${error}`, true);
       return;
     }
 
-    let bodyHTML = await this.page.evaluate(() => document.body.innerHTML);
+    const bodyHTML = await this.page.evaluate(() => document.body.innerHTML);
 
     // Allow only a restricted set of tags and attributes to clean the HTML
     const clean = sanitizeHtml(bodyHTML, {
@@ -122,15 +120,18 @@ export default class ProductTracker {
 
     // Convert the cleaned HTML output to JSON objects
     const json = html2json(clean);
-    // console.log(json);
-
-    // List of items that match the requisites (each item is a string with price, name and URL)
-    var matches: string[] = [];
 
     if (!json || !json.child) {
       Log.error("Missing data, skipping...");
       return;
     }
+
+    this.processData(json);
+  }
+
+  processData(json: any) {
+    // List of items that match the requisites (each item is a string with price, name and URL)
+    var matches: string[] = [];
 
     json.child.forEach((element: any) => {
       if (element.attr) {
@@ -147,34 +148,29 @@ export default class ProductTracker {
             )
           ) {
             //  Build link, name and price of the product in a single string
-            let link =
+            const link =
               "https://www.pccomponentes.com" +
-              element.child.find((link: any) => link.tag === "a").attr.href;
-            let nameText = "[" + name.join([" "]) + "](" + link + ")";
-            let priceText = "*" + price + " EUR*";
-            let match = priceText + "\n" + nameText;
+              element.child.find((a: any) => a.tag === "a").attr.href;
+            const nameText = `[${name.join([" "])}](${link})`;
+            const priceText = `*${price} EUR*`;
+            const match = `${priceText}\n${nameText}`;
 
-            let product: ProductModel = { name, price, link, match };
+            const product: ProductModel = { name, price, link, match };
 
             if (this.purchase) {
-              if (this.config.purchaseConditions) {
-                this.checkPurchaseConditions(
-                  product,
-                  this.config.purchaseConditions
-                );
-              } else {
-                Log.error(
-                  `Purchase is enabled, but the product '${this.id}' has no purchase conditions. Check the config.json file.`
-                );
-              }
+              this.checkPurchaseConditions(product);
             }
+
             matches.push(match);
           }
         }
       }
     });
+    this.checkDifferences(matches);
+  }
 
-    // Check if there is any new card - we use difference to only get the new cards: https://stackoverflow.com/questions/1187518/how-to-get-the-difference-between-two-arrays-in-javascript
+  checkDifferences(matches: string[]) {
+    // Check if there is any new card - use difference to only get the new cards
     const difference = matches.filter((x) => !this.previous.includes(x));
     if (difference.length > 0) {
       Log.breakline();
@@ -193,11 +189,16 @@ export default class ProductTracker {
     this.previous = matches;
   }
 
-  checkPurchaseConditions(
-    product: ProductModel,
-    purchaseConditions: PurchaseConditionsModel[]
-  ) {
-    // Check if the buy conditions are met
+  checkPurchaseConditions(product: ProductModel) {
+    const purchaseConditions = this.config.purchaseConditions;
+    if (!purchaseConditions) {
+      Log.error(
+        `Purchase is enabled, but the product '${this.id}' has no purchase conditions. Check the config.json file.`
+      );
+      return;
+    }
+
+    // Check if the purchase conditions are met
     purchaseConditions.forEach((combo: any) => {
       if (
         !this.buying &&
@@ -205,28 +206,40 @@ export default class ProductTracker {
         combo.model.every((v: string) => product.name.includes(v.toLowerCase()))
       ) {
         if (!this.purchased.includes(product.link)) {
-          this.purchased.push(product.link);
-          Log.success("*Nice price, start the purchase!!!*");
-          Log.important(combo);
-          this.buying = true;
-          this.purchaseService
-            .run(product.link, combo.price, 8000)
-            .then((result: any) => {
-              if (result) {
-                Log.success(
-                  "\n------------\n*** PURCHASE FINISHED ***\n------------\n"
-                );
-                this.notifyService.notify("PURCHASED!\n\n", [product.match]);
-                if (!this.config.purchaseMultiple) {
-                  process.exit(0);
-                }
-              } else {
-                Log.error("Purchase failed...");
-                this.buying = false;
-              }
-            });
+          this.buy(product, combo);
         }
       }
     });
+  }
+
+  buy(product: ProductModel, combo: any) {
+    this.purchased.push(product.link);
+    Log.success(
+      `'${this.id} - Nice price, starting the purchase!` + [product.match]
+    );
+    this.notifyService.notify(
+      `'${this.id} - Nice price, starting the purchase!` + [product.match]
+    );
+
+    this.buying = true;
+    this.purchaseService
+      .run(product.link, combo.price, 8000)
+      .then((result: any) => {
+        if (result) {
+          Log.success(`'${this.id} - Purchased! ` + [product.match]);
+          this.notifyService.notify(
+            `'${this.id} - Purchased! ` + [product.match]
+          );
+          if (!this.config.purchaseMultiple) {
+            this.done = true;
+          }
+        } else {
+          Log.error(`'${this.id} - Purchase failed: ` + [product.match]);
+          this.notifyService.notify(
+            `'${this.id} - Purchase failed: ` + [product.match]
+          );
+          this.buying = false;
+        }
+      });
   }
 }
