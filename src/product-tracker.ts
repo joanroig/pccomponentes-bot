@@ -1,6 +1,10 @@
 import { Browser, Page } from "puppeteer";
 import Container from "typedi";
-import { ProductConfigModel, ProductModel } from "./models";
+import {
+  ProductConfigModel,
+  ProductModel,
+  PurchaseConditionsModel,
+} from "./models";
 import NotifyService from "./services/notify.service";
 import PurchaseService from "./services/purchase.service";
 import Log from "./utils/log";
@@ -199,20 +203,22 @@ export default class ProductTracker {
     }
 
     // Check if the purchase conditions are met
-    purchaseConditions.forEach((combo: any) => {
+    purchaseConditions.forEach((conditions: PurchaseConditionsModel) => {
       if (
         !this.buying &&
-        combo.price >= product.price &&
-        combo.model.every((v: string) => product.name.includes(v.toLowerCase()))
+        conditions.price >= product.price &&
+        conditions.variant.every((v: string) =>
+          product.name.includes(v.toLowerCase())
+        )
       ) {
         if (!this.purchased.includes(product.link)) {
-          this.buy(product, combo);
+          this.buy(product, conditions);
         }
       }
     });
   }
 
-  buy(product: ProductModel, combo: any) {
+  buy(product: ProductModel, conditions: any) {
     this.purchased.push(product.link);
     Log.success(
       `'${this.id} - Nice price, starting the purchase!` + [product.match]
@@ -223,7 +229,7 @@ export default class ProductTracker {
 
     this.buying = true;
     this.purchaseService
-      .run(product.link, combo.price, 8000)
+      .run(product.link, conditions.price, 8000)
       .then((result: any) => {
         if (result) {
           Log.success(`'${this.id} - Purchased! ` + [product.match]);
