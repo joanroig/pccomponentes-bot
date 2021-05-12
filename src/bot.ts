@@ -80,7 +80,7 @@ export default class Bot {
       Log.config("Notifications disabled.", false);
     }
     if (config.purchase) {
-      Log.config("Purchase enabled, but still not implemented.", false);
+      Log.config("Purchase enabled, but still not working.", false);
     } else {
       Log.config("Purchase disabled.", false);
     }

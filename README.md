@@ -65,10 +65,10 @@ If the installation was successful, you should be able to run the following comm
 
 Edit the `config.json` file with your settings. Use the files in the `examples` folder as a reference.
 
-Edit the `.env` file in the root folder by changing the BOT_TOKEN and CHAT_ID strings to connect your Telegram account:
+Edit the `.env` file in the root folder by changing the `BOT_TOKEN` string to connect your Telegram account:
 
-- The BOT_TOKEN is provided by https://t.me/botfather, more info here: https://core.telegram.org/bots/api
-- The CHAT_ID is provided after starting a chat with the Telegram bot.
+- The `BOT_TOKEN` is provided by https://t.me/botfather, more info here: https://core.telegram.org/bots/api
+- The `CHAT_ID` is provided after starting a chat with the Telegram bot. It will be saved automatically in the `.env` file.
 
 If you enable the purchase mode, add those strings in the .env file with your account credentials:
 
