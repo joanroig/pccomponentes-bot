@@ -1,16 +1,20 @@
 # PcComponentes Outlet Bot
 
-Receive a Telegram message when a graphics card is back to stock!
-Currenly implemented just for PcComponentes.com (graphics card outlet section)
-- Branch available with modified purchase code (no credit card needed) from: https://github.com/elpatronaco/pccomponentes-buy-bot
+Receive a Telegram message when a product is back to stock!
+Implemented for the outlet section of PcComponentes.com, useful for tracking:
 
----
+- Graphic cards
+- Processors
+
+In progress: Automatic purchase (no credit card needed).
+
+> ⚠️ Disclaimer: Please note that this is a research project. I am by no means responsible for any usage of this tool. Use it on your behalf.
 
 ## Requirements
 
-For development, you will only need Node.js and a node global package installed in your environement.
+You will need Node.js and a node global package installed in your environement. Yarn is recommended as a package manager and script runner over npm.
 
-### Node
+### Node and npm
 
 - #### Node installation on Windows
 
@@ -21,47 +25,62 @@ For development, you will only need Node.js and a node global package installed 
 
   You can install nodejs and npm easily with apt install, just run the following commands.
 
-      $ sudo apt install nodejs
-      $ sudo apt install npm
+  $ sudo apt install nodejs
+  $ sudo apt install npm
 
 - #### Other Operating Systems
+
   You can find more information about the installation on the [official Node.js website](https://nodejs.org/) and the [official NPM website](https://npmjs.org/).
 
 If the installation was successful, you should be able to run the following command.
 
     $ node --version
-    v8.11.3
+    v14.16.1
 
     $ npm --version
-    6.1.0
+    7.12.0
 
 If you need to update `npm`, you can make it using `npm`! Cool right? After running the following command, just open again the command line and be happy.
 
     $ npm install npm -g
 
----
+### Yarn
+
+You can install yarn after installing npm with the following command.
+
+    $ npm install --global yarn
+
+If the installation was successful, you should be able to run the following command.
+
+    $ yarn --version
+    1.22.10
 
 ## Install
 
     $ git clone https://github.com/joanroig/pcalerts
     $ cd pcalerts
-    $ npm install
+    $ yarn
 
-## Configure app
+## Configure bot
 
-Open the `config.json` file, then edit it with your settings.
-Open the `.env` file in the root folder, change the BOT_TOKEN and CHAT_ID strings to connect your Telegram account:
+Edit the `config.json` file with your settings. Use the files in the `examples` folder as a reference, and check the [examples README](/examples/README.md) to know about all configurations.
 
-- The BOT_TOKEN is provided by https://t.me/botfather, more info here: https://core.telegram.org/bots/api
-- The CHAT_ID is provided after starting a chat with the Telegram bot.
+Edit the `.env` file in the root folder by changing the `BOT_TOKEN` string to connect your Telegram account:
 
-If using the Purchase branch, also add those strings in the .env file with your account: 
+- The `BOT_TOKEN` is provided by https://t.me/botfather, more info here: https://core.telegram.org/bots/api
+- The `CHAT_ID` is provided after starting a chat with the Telegram bot. It will be saved automatically in the `.env` file.
+
+If you enable the purchase mode, add those strings in the .env file with your account credentials:
 
     PCC_USER=username@mail.com
     PCC_PASS=userpassword
 
 ## Running the project
 
-    $ npm start
+    $ yarn start
 
-Or easier if using a Raspberry (maybe chmod + x is needed), double click: `run_raspberry.sh`
+To run it on a Raspberry (maybe chmod + x is needed), you can also execute: `run_raspberry.sh`
+
+## Credits
+
+This project uses modified code from: https://github.com/elpatronaco/pccomponentes-buy-bot

@@ -1,0 +1,24 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Full paths from the repo root separated by newlines
+MUST_NOT_CHANGE='.env'
+
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+  against=HEAD
+else
+  # Initial commit: diff against an empty tree object
+  against=b81f3071c44eaa2e08203f4149c6d2ebbe48a827
+fi
+
+exec 1>&2
+
+if git diff --cached --name-only $against |
+   grep --quiet --line-regexp --fixed-strings "$MUST_NOT_CHANGE"
+then
+  echo Commit would modify one or more files that must not change.
+  exit 1
+else
+  exit 0
+fi
