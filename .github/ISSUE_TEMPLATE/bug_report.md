@@ -6,6 +6,9 @@ labels: bug
 assignees: joanroig
 ---
 
+**Is your bug already submitted? Please check the [issues](https://github.com/joanroig/pccomponentes-outlet-bot/issues) and the [tasks](https://github.com/joanroig/pccomponentes-outlet-bot/projects/1).**
+If the bug is already submitted or considered in the tasks, please do not open new issues.
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 

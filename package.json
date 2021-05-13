@@ -1,6 +1,6 @@
 {
   "name": "pccomponentes-outlet-bot",
-  "version": "1.3.8",
+  "version": "1.3.9",
   "author": "Joan Roig",
   "license": "MIT",
   "description": "Bot for the PcComponentes outlet, it sends Telegram messages and can do automatic purchases. Useful for tracking graphics cards, processors, etc.",
