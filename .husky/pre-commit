@@ -1,11 +1,15 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+# Format code with Prettier and add all changes
+yarn run format
+git add -A .
+
 # Full paths from the repo root separated by newlines
 MUST_NOT_CHANGE='.env'
 
-# Exclude the paths by assuming them as unchanged.
-git update-index --assume-unchanged "$MUST_NOT_CHANGE"
+# Exclude the paths by assuming them as up to date.
+git update-index --skip-worktree -- "$MUST_NOT_CHANGE"
 
 if git rev-parse --verify HEAD >/dev/null 2>&1
 then
@@ -23,9 +27,6 @@ then
   echo Commit would modify one or more files that must not change.
   exit 1
 else
-  yarn run format
-  # git update-index --assume-unchanged "$MUST_NOT_CHANGE"
-  git add -A .
   yarn version --no-git-tag-version --patch 
   git add package.json
   exit 0
