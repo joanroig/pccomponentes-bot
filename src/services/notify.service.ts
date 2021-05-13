@@ -48,9 +48,9 @@ export default class NotifyService {
     });
 
     // Method to get chat id: https://github.com/telegraf/telegraf/issues/204
-    telegraf.hears(["/id", "Getid", "getid", "id", "Id"], (ctx: any) => {
+    telegraf.hears(["🆔", "/id", "Getid", "getid", "id", "Id"], (ctx: any) => {
       let message =
-        "Put this line in the .env file, then restart the bot: " +
+        "🆔 Put this line in the .env file, then restart the bot: " +
         "\nCHAT_ID=" +
         ctx.chat.id;
       ctx.reply(message);
@@ -64,7 +64,7 @@ export default class NotifyService {
     telegraf.hears(
       ["👋", "/hi", "/hello", "Hi", "hi", "Hello", "hello"],
       (ctx: any) => {
-        ctx.reply("The bot is running.");
+        ctx.reply("👋 The bot is running.");
         Log.breakline();
         Log.important("Telegram: Greeting command received.");
         Log.breakline();
@@ -75,7 +75,7 @@ export default class NotifyService {
       ["💫", "/update", "/refresh", "Update", "update", "Refresh", "refresh"],
       (ctx: any) => {
         this.requestUpdate.next(true);
-        ctx.reply("Data refresh requested.");
+        ctx.reply("💫 Data refresh requested.");
         Log.breakline();
         Log.important("Telegram: Data refresh command received.");
         Log.breakline();
@@ -83,7 +83,7 @@ export default class NotifyService {
     );
 
     telegraf.hears(["💀", "/kill"], (ctx: any) => {
-      ctx.reply("Send this command to confirm the shutdown: /headshot");
+      ctx.reply("💀 Send this command to confirm the shutdown: /headshot");
       Log.breakline();
       Log.important(
         "Telegram: Quit command received, asking for confirmation."
@@ -92,7 +92,7 @@ export default class NotifyService {
     });
 
     telegraf.hears(["/headshot"], (ctx: any) => {
-      ctx.reply("Shutting down in 5 seconds...");
+      ctx.reply("🔫 Shutting down in 5 seconds...");
       Log.breakline();
       Log.important(
         "Telegram: Quit command received, shutting down in 5 seconds..."
@@ -137,7 +137,7 @@ export default class NotifyService {
 
   startMessage() {
     this.notify(
-      "BOT RUNNING\nTelegram commands you can write here:\n\n🚀 /start: Set the CHAT_ID to receive alerts\n/id: Print the CHAT_ID\n👋 /hello: Check if the bot is running\n💫 /refresh: Force a refresh of all trackers\n💀 /kill: Shutdown the bot."
+      "🤖 BOT RUNNING 🤖\nTelegram commands you can write here:\n\n🚀 /start: Set the CHAT_ID to receive alerts\n🆔 /id: Print the CHAT_ID\n👋 /hello: Check if the bot is running\n💫 /refresh: Force a refresh of all trackers\n💀 /kill: Shutdown the bot."
     );
   }
 
