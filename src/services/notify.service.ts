@@ -62,7 +62,7 @@ export default class NotifyService {
 
     // Commands
     telegraf.hears(
-      ["/hi", "/hello", "Hi", "hi", "Hello", "hello"],
+      ["👋", "/hi", "/hello", "Hi", "hi", "Hello", "hello"],
       (ctx: any) => {
         ctx.reply("The bot is running.");
         Log.breakline();
@@ -72,7 +72,7 @@ export default class NotifyService {
     );
 
     telegraf.hears(
-      ["/update", "/refresh", "Update", "update", "Refresh", "refresh"],
+      ["💫", "/update", "/refresh", "Update", "update", "Refresh", "refresh"],
       (ctx: any) => {
         this.requestUpdate.next(true);
         ctx.reply("Data refresh requested.");
@@ -82,7 +82,16 @@ export default class NotifyService {
       }
     );
 
-    telegraf.hears(["/kill"], (ctx: any) => {
+    telegraf.hears(["💀", "/kill"], (ctx: any) => {
+      ctx.reply("Send this command to confirm the shutdown: /headshot");
+      Log.breakline();
+      Log.important(
+        "Telegram: Quit command received, asking for confirmation."
+      );
+      Log.breakline();
+    });
+
+    telegraf.hears(["/headshot"], (ctx: any) => {
       ctx.reply("Shutting down in 5 seconds...");
       Log.breakline();
       Log.important(
@@ -128,7 +137,7 @@ export default class NotifyService {
 
   startMessage() {
     this.notify(
-      "BOT RUNNING\nTelegram commands you can write here:\n\n/start: Set the CHAT_ID to receive alerts\n/id: Print the CHAT_ID\n/hello: Check if the bot is running\n/refresh: Force a refresh of all trackers\n/kill: Shutdown the bot."
+      "BOT RUNNING\nTelegram commands you can write here:\n\n🚀 /start: Set the CHAT_ID to receive alerts\n/id: Print the CHAT_ID\n👋 /hello: Check if the bot is running\n💫 /refresh: Force a refresh of all trackers\n💀 /kill: Shutdown the bot."
     );
   }
 
