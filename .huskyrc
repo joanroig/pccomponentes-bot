@@ -1,0 +1,7 @@
+export PATH="/usr/local/bin:$PATH"
+
+if [ -f $HOME/.nvm/nvm.sh ]
+then
+  . $HOME/.nvm/nvm.sh
+  export PATH="$HOME/.nvm/versions/node/$(nvm current)/bin:$PATH"
+fi

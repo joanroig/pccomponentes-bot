@@ -1,5 +1,6 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
+. "$(dirname "$0")/common.sh"
 
 # Full paths of files from the repo root that should not be committed, separated by newlines
 MUST_NOT_CHANGE='.env'
