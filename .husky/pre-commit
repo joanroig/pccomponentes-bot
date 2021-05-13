@@ -4,6 +4,9 @@
 # Full paths from the repo root separated by newlines
 MUST_NOT_CHANGE='.env'
 
+# Exclude the paths by assuming them as unchanged.
+git update-index --assume-unchanged "$MUST_NOT_CHANGE"
+
 if git rev-parse --verify HEAD >/dev/null 2>&1
 then
   against=HEAD
@@ -20,5 +23,10 @@ then
   echo Commit would modify one or more files that must not change.
   exit 1
 else
+  yarn run format
+  # git update-index --assume-unchanged "$MUST_NOT_CHANGE"
+  git add -A .
+  yarn version --no-git-tag-version --patch 
+  git add package.json
   exit 0
 fi
