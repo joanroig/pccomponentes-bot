@@ -1,15 +1,16 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+# Full paths from the repo root separated by newlines
+MUST_NOT_CHANGE='.env'
+
 # Format code with Prettier and add all changes
 yarn run format
 git add -A .
 
-# Full paths from the repo root separated by newlines
-MUST_NOT_CHANGE='.env'
-
-# Exclude the paths by assuming them as up to date.
-git update-index --skip-worktree -- "$MUST_NOT_CHANGE"
+# Exclude from the commit by unstaging the files.
+git reset -- "$MUST_NOT_CHANGE"
+# git update-index --skip-worktree -- "$MUST_NOT_CHANGE"
 
 if git rev-parse --verify HEAD >/dev/null 2>&1
 then
@@ -24,9 +25,11 @@ exec 1>&2
 if git diff --cached --name-only $against |
    grep --quiet --line-regexp --fixed-strings "$MUST_NOT_CHANGE"
 then
-  echo Commit would modify one or more files that must not change.
+  # Just in case any of the files is not unstaged, prevent the commit
+  echo Commit would modify one or more files that must not change: "$MUST_NOT_CHANGE"
   exit 1
 else
+  # Increase package.json version
   yarn version --no-git-tag-version --patch 
   git add package.json
   exit 0
