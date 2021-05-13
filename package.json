@@ -1,25 +1,50 @@
 {
-  "name": "pcalert",
-  "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
-  "scripts": {
-    "start": "nodemon app.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
+  "name": "pccomponentes-outlet-bot",
+  "version": "1.2.0",
+  "author": "Joan Roig",
   "license": "ISC",
+  "description": "Bot for the PcComponentes outlet, it sends Telegram messages and can do automatic purchases. Useful for tracking graphics cards, processors, etc.",
+  "main": "app.ts",
+  "scripts": {
+    "start": "ts-node src/app.ts",
+    "dev": "nodemon src/app.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "husky install"
+  },
   "devDependencies": {
-    "@types/node": "^14.14.19",
-    "nodemon": "^2.0.6",
+    "@types/node": "^15.0.2",
+    "@types/node-fetch": "^2.5.10",
+    "eslint": "^7.26.0",
+    "husky": "^6.0.0",
+    "nodemon": "^2.0.7",
     "request": "^2.88.2"
   },
   "dependencies": {
-    "dotenv": "^8.2.0",
+    "axios": "^0.21.1",
+    "chalk": "^4.1.1",
+    "dotenv": "^9.0.2",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0",
+    "ghost-cursor": "^1.1.5",
     "html2json": "^1.0.2",
-    "sanitize-html": "^2.3.0",
-    "telegraf": "^3.38.0",
+    "node-fetch": "^2.6.1",
+    "puppeteer": "^9.1.1",
+    "puppeteer-extra": "^3.1.18",
+    "puppeteer-extra-plugin-adblocker": "^2.11.11",
+    "puppeteer-extra-plugin-stealth": "^2.7.8",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.0.0",
+    "sanitize-html": "^2.3.3",
+    "scrape-it": "^5.3.1",
+    "telegraf": "^4.3.0",
     "ts-node": "^9.1.1",
-    "typescript": "^4.1.3"
+    "typedi": "^0.10.0",
+    "typescript": "^4.2.4"
+  },
+  "engines": {
+    "npm": "please-use-yarn",
+    "yarn": ">= 1.19.1"
   }
 }

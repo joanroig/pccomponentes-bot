@@ -1,3 +1,3 @@
 #!/bin/bash
 
-lxterminal -e npm start
+lxterminal -e yarn start
