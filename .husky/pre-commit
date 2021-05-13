@@ -1,16 +1,14 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-# Full paths from the repo root separated by newlines
+# Full paths of files from the repo root that should not be committed, separated by newlines
 MUST_NOT_CHANGE='.env'
 
-# Format code with Prettier and add all changes
-yarn run format
-git add -A .
+# Format code of staged files with Prettier
+yarn run format:staged
 
-# Exclude from the commit by unstaging the files.
+# Exclude from the commit by unstaging the files
 git reset -- "$MUST_NOT_CHANGE"
-# git update-index --skip-worktree -- "$MUST_NOT_CHANGE"
 
 if git rev-parse --verify HEAD >/dev/null 2>&1
 then
