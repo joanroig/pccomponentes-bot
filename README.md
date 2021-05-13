@@ -63,7 +63,7 @@ If the installation was successful, you should be able to run the following comm
 
 ## Configure bot
 
-Edit the `config.json` file with your settings. Use the files in the `examples` folder as a reference.
+Edit the `config.json` file with your settings. Use the files in the `examples` folder as a reference, and check the [examples README](./examples/README.md) to know about all configurations.
 
 Edit the `.env` file in the root folder by changing the `BOT_TOKEN` string to connect your Telegram account:
 

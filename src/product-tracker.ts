@@ -183,7 +183,7 @@ export default class ProductTracker {
       Log.breakline();
 
       this.notifyService.notify(
-        `'${this.id} tracker' - PRODUCTS FOUND:`,
+        `'${this.id} tracker' - Products found:`,
         difference
       );
     } else {
@@ -197,7 +197,7 @@ export default class ProductTracker {
     const purchaseConditions = this.config.purchaseConditions;
     if (!purchaseConditions) {
       Log.error(
-        `Purchase is enabled, but the product '${this.id}' has no purchase conditions. Check the config.json file.`
+        `Purchase is enabled, but the product tracker '${this.id}' has no purchase conditions. Check the config.json file.`
       );
       return;
     }
@@ -221,10 +221,12 @@ export default class ProductTracker {
   buy(product: ProductModel, conditions: any) {
     this.purchased.push(product.link);
     Log.success(
-      `'${this.id} - Nice price, starting the purchase!` + [product.match]
+      `'${this.id} tracker' - Nice price, starting the purchase!` +
+        [product.match]
     );
     this.notifyService.notify(
-      `'${this.id} - Nice price, starting the purchase!` + [product.match]
+      `'${this.id} tracker' - Nice price, starting the purchase!`,
+      [product.match]
     );
 
     this.buying = true;
@@ -232,17 +234,20 @@ export default class ProductTracker {
       .run(product.link, conditions.price, 8000)
       .then((result: any) => {
         if (result) {
-          Log.success(`'${this.id} - Purchased! ` + [product.match]);
-          this.notifyService.notify(
-            `'${this.id} - Purchased! ` + [product.match]
-          );
+          Log.success(`'${this.id} tracker' - Purchased! ` + [product.match]);
+          this.notifyService.notify(`'${this.id} tracker' - Purchased! `, [
+            product.match,
+          ]);
           if (!this.config.purchaseMultiple) {
             this.done = true;
           }
         } else {
-          Log.error(`'${this.id} - Purchase failed: ` + [product.match]);
+          Log.error(
+            `'${this.id} tracker' - Purchase failed: ` + [product.match]
+          );
           this.notifyService.notify(
-            `'${this.id} - Purchase failed: ` + [product.match]
+            `'${this.id} tracker' - Purchase failed: `,
+            [product.match]
           );
           this.buying = false;
         }

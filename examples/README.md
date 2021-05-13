@@ -1,0 +1,3 @@
+# PcComponentes Outlet Bot - Configuration
+
+In progres...
