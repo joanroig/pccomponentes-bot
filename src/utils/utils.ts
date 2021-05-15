@@ -1,11 +1,11 @@
+import { randomNumberRange } from "ghost-cursor/lib/math";
 import { Browser, Page } from "puppeteer";
-const { randomNumberRange } = require("ghost-cursor/lib/math");
 
 export default class Utils {
   // Get current date in a readable format
-  static getDate() {
-    var currentdate = new Date();
-    var datetime =
+  static getDate(): string {
+    const currentdate = new Date();
+    const datetime =
       "# " +
       currentdate.getDate() +
       "/" +
@@ -21,21 +21,24 @@ export default class Utils {
     return datetime;
   }
 
-  static humanType = async (page: Page, str: string) => {
-    for (let letter of Array.from(str)) {
+  static async humanType(page: Page, str: string): Promise<void> {
+    for (const letter of Array.from(str)) {
       await page.keyboard.type(letter);
       await page.waitForTimeout(randomNumberRange(30, 100));
     }
-  };
+  }
 
-  static randomTimeout(minUpdateSeconds: number, maxUpdateSeconds: number) {
+  static randomTimeout(
+    minUpdateSeconds: number,
+    maxUpdateSeconds: number
+  ): number {
     // Math.random() * (max - min + 1) + min); // Generate a number in a range
-    let min = minUpdateSeconds * 1000;
-    let max = maxUpdateSeconds * 1000;
+    const min = minUpdateSeconds * 1000;
+    const max = maxUpdateSeconds * 1000;
     return Math.round(Math.random() * (max - min + 1)) + min;
   }
 
-  static async createHeadlessPage(browser: Browser) {
+  static async createHeadlessPage(browser: Browser): Promise<Page> {
     const page = await browser.newPage();
 
     const headlessUserAgent = await page.evaluate(() => navigator.userAgent);

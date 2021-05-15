@@ -1,34 +1,29 @@
 {
   "notify": true,
   "purchase": false,
-  "products": {
-    "gpus": {
-      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6&page=0&order=price-asc",
-      "models": ["2070", "3060", "3060ti", "3070"],
-      "minUpdateSeconds": 8,
-      "maxUpdateSeconds": 18,
-      "maxPrice": 700,
-      "purchaseMultiple": false,
-      "purchaseConditions": [
+  "categories": {
+    "GPUs": {
+      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6&page=0&order=new",
+      "articles": [
         {
-          "variant": ["2070", "super"],
-          "price": 380
+          "model": ["2060", "super"],
+          "maxPrice": 320
         },
         {
-          "variant": ["2070"],
-          "price": 320
+          "model": ["2070"],
+          "maxPrice": 350
         },
         {
-          "variant": ["3060", "msi"],
-          "price": 400
+          "model": ["2070", "super", "msi"],
+          "maxPrice": 370
         },
         {
-          "variant": ["3060ti", "evga"],
-          "price": 400
+          "model": ["3060"],
+          "maxPrice": 440
         },
         {
-          "variant": ["3070", "gigabyte", "gaming", "oc"],
-          "price": 500
+          "model": ["3070", "evga"],
+          "maxPrice": 540
         }
       ]
     }

@@ -1,6 +1,6 @@
 # PcComponentes Outlet Bot
 
-Receive a Telegram message when a product is back to stock!
+Receive a Telegram message when a article is back to stock!
 Implemented for the outlet section of PcComponentes.com, useful for tracking:
 
 - Graphic cards
@@ -80,6 +80,18 @@ If you enable the purchase mode, add those strings in the .env file with your ac
     $ yarn start
 
 To run it on a Raspberry (maybe chmod + x is needed), you can also execute: `run_raspberry.sh`
+
+## Known issues
+
+### Login fails, but credentials are right
+
+Edit the `puppeteer-config.json` and set `"debug":true`.
+Restart the bot, and in the login attempt check if a captcha appears. Solve it manually after the bot introduces the credentials, and perform a login.
+Then set `"debug":false` again and check it the problem is solved.
+
+### An issue is not listed here?
+
+Please check the [open](https://github.com/joanroig/pccomponentes-outlet-bot/labels/bug) and [closed](https://github.com/joanroig/pccomponentes-outlet-bot/issues?q=is%3Aclosed+label%3Abug) bugs in the issue tracker for the details of your bug. If you can't find it, open a [new issue](https://github.com/joanroig/pccomponentes-outlet-bot/issues/new?assignees=joanroig&labels=bug&template=bug_report.md&title=%5BBUG%5D+).
 
 ## Credits
 

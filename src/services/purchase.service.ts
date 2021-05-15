@@ -1,23 +1,34 @@
+import { createCursor, getRandomPagePoint } from "ghost-cursor";
+import { randomNumberRange } from "ghost-cursor/lib/math";
 import { Browser } from "puppeteer";
 import { Service } from "typedi";
 import Log from "../utils/log";
 import Utils from "../utils/utils";
 import NotifyService from "./notify.service";
-const { randomNumberRange } = require("ghost-cursor/lib/math");
-const { createCursor, getRandomPagePoint } = require("ghost-cursor");
 
 @Service()
 export default class PurchaseService {
-  email: string = process.env.PCC_USER!;
-  password: string = process.env.PCC_PASS!;
-  link: string = "";
-  maxPrice: number = 0;
-  refreshRate: number = 0;
-  phone?: string;
+  private readonly email: string;
+  private readonly password: string;
+  // private readonly link: string;
+  // private readonly maxPrice = 0;
+  // private readonly refreshRate = 0;
+  private loginAttempts = 0;
+  private readonly maxLoginAttempts = 3;
 
-  constructor(private readonly notifyService: NotifyService) {}
+  constructor(private readonly notifyService: NotifyService) {
+    this.email = process.env.PCC_USER || "";
+    this.password = process.env.PCC_PASS || "";
+    if (this.email == "" || this.password == "") {
+      Log.critical("Login failed due missing data. Check your credentials.");
+      this.notifyService.notify(
+        `Login attempt failed due missing data, check the credentials. Bot stopped.`
+      );
+      this.notifyService.sendShutdownRequest(1);
+    }
+  }
 
-  async run(link: any, maxPrice: any, refreshRate: any) {
+  async run(link: any, maxPrice: any, refreshRate: any): Promise<boolean> {
     // (this.link = link),
     //   (this.maxPrice = maxPrice),
     //   (this.refreshRate = refreshRate);
@@ -28,9 +39,10 @@ export default class PurchaseService {
     //   console.error("ERROR NOT CAUGHT WHILE RUNNING BOT. MORE INFO BELOW");
     //   console.error(err);
     // }
+    return false;
   }
 
-  async login(browser: Browser, debug: boolean) {
+  async login(browser: Browser, debug: boolean): Promise<boolean> {
     const loginPage = debug
       ? await browser.newPage()
       : await Utils.createHeadlessPage(browser);
@@ -50,6 +62,7 @@ export default class PurchaseService {
       waitForClick: randomNumberRange(1000, 3000),
       moveDelay: randomNumberRange(1000, 3000),
       paddingPercentage: 20,
+      waitForSelector: 1000,
     });
     await Utils.humanType(loginPage, this.email.trim());
 
@@ -57,6 +70,7 @@ export default class PurchaseService {
       waitForClick: randomNumberRange(1000, 3000),
       moveDelay: randomNumberRange(1000, 3000),
       paddingPercentage: 20,
+      waitForSelector: 1000,
     });
     await Utils.humanType(loginPage, this.password.trim());
 
@@ -64,27 +78,34 @@ export default class PurchaseService {
       waitForClick: randomNumberRange(1000, 3000),
       moveDelay: randomNumberRange(1000, 3000),
       paddingPercentage: 20,
+      waitForSelector: 1000,
     });
 
     await loginPage.waitForTimeout(10000);
 
-    let success = !loginPage.url().includes("pccomponentes.com/login");
+    const success = !loginPage.url().includes("pccomponentes.com/login");
 
     if (success) {
       Log.success("Successfully logged in!");
+      this.loginAttempts = 0;
+      await loginPage.close();
+      return true;
     } else {
-      Log.critical("Login failed. Check your credentials.");
-      this.notifyService.notify(
-        `Login attempt failed, check the credentials. Bot stopped.`
-      );
-      process.exit(1);
+      this.loginAttempts++;
+      if (this.loginAttempts >= this.maxLoginAttempts) {
+        Log.critical("Login failed three times. Check your credentials.");
+        this.notifyService.notify(
+          `Login attempt failed, check the credentials. Bot stopped.`
+        );
+        return false;
+      } else {
+        Log.error("Login attempt failed. Trying again in 5 seconds...");
+        await loginPage.waitForTimeout(5000);
+        await loginPage.close();
+        return this.login(browser, debug);
+      }
     }
-
-    await loginPage.close();
-
-    return true;
   }
-
   // async runItem(driver: WebDriver) {
   //   await driver
   //     .navigate()
@@ -102,7 +123,7 @@ export default class PurchaseService {
   //           .findElement(By.id("notify-me"))
   //           .then(() =>
   //             console.log(
-  //               `Product is not yet in stock (${new Date().toUTCString()})`
+  //               `Article is not yet in stock (${new Date().toUTCString()})`
   //             )
   //           )
   //           .catch(async () => {
@@ -116,7 +137,7 @@ export default class PurchaseService {
   //             // checks if current price is below max price before continuing
   //             if (price && price <= this.maxPrice) {
   //               stock = true;
-  //               console.log(`PRODUCT IN STOCK! Starting buy process`);
+  //               console.log(`ARTICLE IN STOCK! Starting buy process`);
   //             } else {
   //               console.log(
   //                 `Price is above max. Max price set - ${
@@ -140,7 +161,7 @@ export default class PurchaseService {
   //     .then((value) => value.click())
   //     .catch(() => console.log("No cookie accept button to click"));
 
-  //   // clicks on buy button on product page. There are 3 buttons that show up depending on the current window size.
+  //   // clicks on buy button on article page. There are 3 buttons that show up depending on the current window size.
   //   // the bot will attempt to click all of them
   //   const buyButtons = await driver.findElements(By.className("buy-button"));
   //   let clickedButton = false;
@@ -205,7 +226,7 @@ export default class PurchaseService {
   //   return true;
   // }
 
-  async sleep(msec: number) {
+  async sleep(msec: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, msec));
   }
 }
