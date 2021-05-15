@@ -1,6 +1,6 @@
 {
   "name": "pccomponentes-outlet-bot",
-  "version": "1.3.9",
+  "version": "1.4.0",
   "author": "Joan Roig",
   "license": "MIT",
   "description": "Bot for the PcComponentes outlet, it sends Telegram messages and can do automatic purchases. Useful for tracking graphics cards, processors, etc.",
@@ -9,33 +9,39 @@
     "start": "ts-node src/app.ts",
     "dev": "nodemon src/app.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "prettier --check .",
-    "format": "prettier --write .",
-    "format:staged": "pretty-quick --staged",
+    "lint": "eslint . --ext .js,.ts",
+    "format": "eslint --fix . --ext .js,.ts",
+    "format:staged": "lint-staged",
     "postinstall": "husky install"
   },
   "devDependencies": {
     "@types/node": "^15.0.3",
     "@types/node-fetch": "^2.5.10",
+    "@types/sanitize-html": "^2.3.1",
+    "@typescript-eslint/eslint-plugin": "^4.23.0",
+    "@typescript-eslint/parser": "^4.23.0",
     "eslint": "^7.26.0",
-    "eslint-config-prettier": "^8.3.0",
+    "eslint-config-prettier": "8.3.0",
+    "eslint-plugin-prettier": "3.4.0",
     "husky": "^6.0.0",
+    "lint-staged": "^11.0.0",
     "nodemon": "^2.0.7",
     "prettier": "^2.3.0",
-    "pretty-quick": "^3.1.0",
     "request": "^2.88.2"
   },
   "dependencies": {
+    "ajv": "^8.4.0",
     "axios": "^0.21.1",
     "chalk": "^4.1.1",
     "dotenv": "^9.0.2",
     "eslint-config-standard": "^16.0.2",
-    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-import": "^2.23.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.0",
     "ghost-cursor": "^1.1.5",
     "html2json": "^1.0.2",
     "node-fetch": "^2.6.1",
+    "open": "^8.0.8",
     "puppeteer": "^9.1.1",
     "puppeteer-extra": "^3.1.18",
     "puppeteer-extra-plugin-adblocker": "^2.11.11",
@@ -52,5 +58,8 @@
   "engines": {
     "npm": "please-use-yarn",
     "yarn": ">= 1.19.1"
+  },
+  "lint-staged": {
+    "src/**/*.{js,ts}": "eslint --cache --fix"
   }
 }

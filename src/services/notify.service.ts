@@ -1,23 +1,30 @@
 import axios from "axios";
-import { Subject } from "rxjs";
-import { Telegraf } from "telegraf";
+import fs from "fs";
+import { Observable, Subject } from "rxjs";
+import { Context, Telegraf } from "telegraf";
 import { Service } from "typedi";
 import Log from "../utils/log";
-var fs = require("fs");
 
 @Service()
 export default class NotifyService {
   private telegraf!: Telegraf;
-  public requestUpdate = new Subject<boolean>();
   private sendNotifications = false;
+  public updateRequest = new Subject<boolean>();
+  public shutdownRequest = new Subject<number>();
 
-  constructor() {}
-
-  getRequestUpdates() {
-    return this.requestUpdate.asObservable();
+  getUpdateRequest(): Observable<boolean> {
+    return this.updateRequest.asObservable();
   }
 
-  async startTelegram() {
+  getShutdownRequest(): Observable<number> {
+    return this.shutdownRequest.asObservable();
+  }
+
+  sendShutdownRequest(status: number): void {
+    this.shutdownRequest.next(status);
+  }
+
+  async startTelegram(): Promise<void> {
     if (process.env.BOT_TOKEN) {
       // Remove all commands sent while the bot was offline
       try {
@@ -41,29 +48,45 @@ export default class NotifyService {
     const telegraf = this.telegraf;
 
     // Telegram bot setup
-    telegraf.start((ctx: any) => {
-      this.saveChatId(ctx);
+    telegraf.start((ctx: Context) => {
       Log.breakline();
       Log.important("Telegram: Start command received.");
+      if (ctx.chat) {
+        const chatId = ctx.chat.id;
+        this.saveChatId(chatId);
+      } else {
+        Log.breakline();
+        Log.critical(
+          "Error while saving the CHAT_ID automatically: Chat not found."
+        );
+      }
     });
 
     // Method to get chat id: https://github.com/telegraf/telegraf/issues/204
-    telegraf.hears(["🆔", "/id", "Getid", "getid", "id", "Id"], (ctx: any) => {
-      let message =
-        "🆔 Put this line in the .env file, then restart the bot: " +
-        "\nCHAT_ID=" +
-        ctx.chat.id;
-      ctx.reply(message);
-      Log.breakline();
-      Log.important("Telegram: Id command received.");
-      Log.important(message);
-      Log.breakline();
-    });
+    telegraf.hears(
+      ["🆔", "/id", "Getid", "getid", "id", "Id"],
+      (ctx: Context) => {
+        Log.breakline();
+        Log.important("Telegram: Id command received.");
+        if (ctx.chat) {
+          const message =
+            "🆔 Put this line in the .env file, then restart the bot: " +
+            "\nCHAT_ID=" +
+            ctx.chat.id;
+          ctx.reply(message);
+          Log.important(message);
+        } else {
+          Log.breakline();
+          Log.critical("Error while reading the CHAT_ID: Chat not found.");
+        }
+        Log.breakline();
+      }
+    );
 
     // Commands
     telegraf.hears(
       ["👋", "/hi", "/hello", "Hi", "hi", "Hello", "hello"],
-      (ctx: any) => {
+      (ctx: Context) => {
         ctx.reply("👋 The bot is running.");
         Log.breakline();
         Log.important("Telegram: Greeting command received.");
@@ -73,8 +96,8 @@ export default class NotifyService {
 
     telegraf.hears(
       ["💫", "/update", "/refresh", "Update", "update", "Refresh", "refresh"],
-      (ctx: any) => {
-        this.requestUpdate.next(true);
+      (ctx: Context) => {
+        this.updateRequest.next(true);
         ctx.reply("💫 Data refresh requested.");
         Log.breakline();
         Log.important("Telegram: Data refresh command received.");
@@ -82,7 +105,7 @@ export default class NotifyService {
       }
     );
 
-    telegraf.hears(["💀", "/kill"], (ctx: any) => {
+    telegraf.hears(["💀", "/shutdown"], (ctx: Context) => {
       ctx.reply("💀 Send this command to confirm the shutdown: /headshot");
       Log.breakline();
       Log.important(
@@ -91,16 +114,10 @@ export default class NotifyService {
       Log.breakline();
     });
 
-    telegraf.hears(["/headshot"], (ctx: any) => {
-      ctx.reply("🔫 Shutting down in 5 seconds...");
+    telegraf.hears(["/headshot"], () => {
+      Log.important("Telegram: Quit command received.");
       Log.breakline();
-      Log.important(
-        "Telegram: Quit command received, shutting down in 5 seconds..."
-      );
-      Log.breakline();
-      setTimeout(() => {
-        process.exit(0);
-      }, 5000);
+      this.sendShutdownRequest(0);
     });
 
     telegraf.launch().catch((error) => {
@@ -113,7 +130,7 @@ export default class NotifyService {
   }
 
   // Send a message using the Telegram bot
-  notify(message: string, results?: string[]) {
+  notify(message: string, results?: string[]): void {
     if (this.sendNotifications) {
       if (process.env.CHAT_ID) {
         let sendMessage = "*\n\n" + message + "* \n\n";
@@ -135,43 +152,56 @@ export default class NotifyService {
     }
   }
 
-  startMessage() {
+  startMessage(): void {
     this.notify(
-      "🤖 BOT RUNNING 🤖\nTelegram commands you can write here:\n\n🚀 /start: Set the CHAT_ID to receive alerts\n🆔 /id: Print the CHAT_ID\n👋 /hello: Check if the bot is running\n💫 /refresh: Force a refresh of all trackers\n💀 /kill: Shutdown the bot."
+      "🤖 BOT RUNNING 🤖\nTelegram commands you can write here:\n\n🚀 /start: Set the CHAT_ID to receive alerts\n🆔 /id: Print the CHAT_ID\n👋 /hello: Check if the bot is running\n💫 /refresh: Force a refresh of all trackers\n💀 /shutdown: Shutdown the bot."
     );
   }
 
-  private saveChatId(ctx: any) {
+  stopMessage(): void {
+    const message = "👋 Shutting down in 5 seconds...";
+    this.notify(message);
+    Log.important(message);
+    Log.breakline();
+  }
+
+  private saveChatId(chatId: number) {
     // Save the chat id in the .env file for the next sessions
-    fs.readFile(".env", "utf8", (err: any, data: any) => {
-      var formatted;
+    fs.readFile(".env", "utf8", (err, data) => {
+      if (err) {
+        Log.breakline();
+        Log.critical("Error while saving the CHAT_ID automatically: " + err);
+        Log.important(
+          "Create a .env file in the project's root directory and put this line in it, then restart the bot: " +
+            "\nCHAT_ID=" +
+            chatId
+        );
+        Log.breakline();
+      }
+      let formatted;
       if (data.includes("CHAT_ID=")) {
         // Replace the chat id line
-        formatted = data.replace(
-          /CHAT_ID=.*/g,
-          "CHAT_ID=" + ctx.chat.id
-        ) as string;
+        formatted = data.replace(/CHAT_ID=.*/g, "CHAT_ID=" + chatId) as string;
       } else {
         // Append the chat id line
-        formatted = data + "\nCHAT_ID=" + ctx.chat.id;
+        formatted = data + "\nCHAT_ID=" + chatId;
       }
 
-      fs.writeFile(".env", formatted, "utf8", (err: any) => {
+      fs.writeFile(".env", formatted, "utf8", (err) => {
         if (err) {
-          console.warn(err);
           Log.breakline();
-          Log.critical("Error while saving the CHAT_ID automatically.");
+          Log.critical("Error while saving the CHAT_ID automatically: " + err);
           Log.important(
             "Put this line in the .env file, then restart the bot: " +
               "\nCHAT_ID=" +
-              ctx.chat.id
+              chatId
           );
           Log.breakline();
         } else {
           // Set the chat id for this session
-          process.env.CHAT_ID = ctx.chat.id;
+          process.env.CHAT_ID = String(chatId);
           Log.breakline();
-          Log.important("CHAT_ID saved in the .env file: " + ctx.chat.id);
+          Log.important("CHAT_ID saved in the .env file: " + chatId);
           Log.breakline();
           this.startMessage();
         }

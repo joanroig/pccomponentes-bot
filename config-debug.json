@@ -7,29 +7,29 @@
       "articles": [
         {
           "model": ["2060", "super"],
-          "maxPrice": 320
+          "price": 320
         },
         {
           "model": ["2070"],
-          "maxPrice": 350
+          "price": 350
         },
         {
           "model": ["2070", "super", "msi"],
-          "maxPrice": 370
+          "price": 370
         },
         {
           "model": ["3060"],
-          "maxPrice": 440
+          "price": 440
         },
         {
           "model": ["3070", "evga"],
-          "maxPrice": 540
+          "price": 540
         }
       ]
     },
     "CPUs": {
       "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=4&page=0&order=new",
-      "maxPrice": 600,
+      "maxPrice": 400,
       "articles": [
         {
           "model": ["amd", "5800x"]
@@ -37,6 +37,15 @@
         {
           "model": ["amd", "5900x"],
           "purchase": false
+        }
+      ]
+    },
+    "Motherboards": {
+      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=3&page=0&order=new",
+      "purchase": false,
+      "articles": [
+        {
+          "model": ["Asus", "ROG", "STRIX", "B450-F", "GAMING"]
         }
       ]
     }

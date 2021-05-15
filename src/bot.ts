@@ -1,26 +1,25 @@
+import "dotenv/config";
 import { Browser } from "puppeteer";
+import puppeteer from "puppeteer-extra";
 import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { Service } from "typedi";
-import * as config from "../config.json";
-import ProductTracker from "./product-tracker";
-import * as puppeteerConfig from "./puppeteer-config.json";
+import config from "../config.json";
+import puppeteerConfig from "../puppeteer-config.json";
+import ArticleTracker from "./article-tracker";
+import { CategoryConfig } from "./models";
 import NotifyService from "./services/notify.service";
 import PurchaseService from "./services/purchase.service";
 import Log from "./utils/log";
 
 // Import environment configurations
-require("dotenv").config();
-
-const puppeteer = require("puppeteer-extra");
-
 @Service()
 export default class Bot {
   private readonly purchase = config.purchase;
   private readonly debug = puppeteerConfig.debug;
   private browser!: Browser;
 
-  private readonly trackers = new Map<string, ProductTracker>();
+  private readonly trackers = new Map<string, ArticleTracker>();
 
   constructor(
     private readonly notifyService: NotifyService,
@@ -29,9 +28,14 @@ export default class Bot {
     // Setup plugins (only once, do not put this in the prepareBrowser method!)
     puppeteer.use(StealthPlugin());
     puppeteer.use(AdblockerPlugin());
+
+    // Detect if the console is closed, then stop the bot completely
+    process.on("SIGHUP", () => {
+      this.stop();
+    });
   }
 
-  async prepareBrowser() {
+  async prepareBrowser(): Promise<boolean> {
     Log.breakline();
     Log.info("Preparing browser...");
 
@@ -55,14 +59,16 @@ export default class Bot {
 
     if (this.purchase) {
       try {
-        await this.purchaseService.login(this.browser, this.debug);
+        return await this.purchaseService.login(this.browser, this.debug);
       } catch (error) {
         Log.error("Exception thrown while logging in: " + error);
+        return false;
       }
     }
+    return true;
   }
 
-  start() {
+  async start(): Promise<void> {
     Log.breakline();
     Log.info(process.env.npm_package_name);
     Log.info("Version " + process.env.npm_package_version);
@@ -72,34 +78,43 @@ export default class Bot {
     if (config.notify) {
       Log.config("Notifications enabled.", true);
       // Setup the telegram bot
-      this.notifyService.startTelegram();
-      this.notifyService.getRequestUpdates().subscribe((update) => {
+      await this.notifyService.startTelegram();
+      this.notifyService.getUpdateRequest().subscribe(() => {
         this.updateTrackers();
+      });
+      this.notifyService.getShutdownRequest().subscribe(() => {
+        this.stop();
       });
     } else {
       Log.config("Notifications disabled.", false);
     }
     if (config.purchase) {
-      Log.config("Purchase enabled, but still not working.", false);
+      Log.config("Purchase enabled, but still not implemented.", false);
     } else {
       Log.config("Purchase disabled.", false);
     }
 
-    this.prepareBrowser().then((ready) => {
+    this.prepareBrowser().then((success) => {
+      if (!success) {
+        this.notifyService.sendShutdownRequest(1);
+        return;
+      }
+
       Log.breakline();
       Log.info("Preparing trackers...");
 
-      // Create a tracker for each product to track
-      for (const [key, value] of Object.entries(config.products)) {
-        const tracker = new ProductTracker(
+      // Create a tracker for each category to track
+      for (const [key, value] of Object.entries(config.categories)) {
+        const categoryConfig = new CategoryConfig(value);
+        const tracker = new ArticleTracker(
           key,
-          value,
+          categoryConfig,
           this.browser,
           this.purchase,
           this.debug
         );
         this.trackers.set(key, tracker);
-        Log.success(`${key}: Product tracker started.`);
+        Log.success(`${key}: Article tracker started.`);
       }
 
       Log.breakline();
@@ -112,7 +127,17 @@ export default class Bot {
     });
   }
 
-  updateTrackers() {
+  async stop(): Promise<void> {
+    this.notifyService.stopMessage();
+    this.trackers.forEach((tracker) => tracker.stop());
+    this.browser.removeAllListeners();
+    await this.browser.close();
+    setTimeout(() => {
+      process.exit(0);
+    }, 5000);
+  }
+
+  updateTrackers(): void {
     this.trackers.forEach((tracker, key) => {
       if (tracker) {
         tracker.update();
@@ -124,8 +149,9 @@ export default class Bot {
     });
   }
 
-  reconnectTrackers() {
-    this.prepareBrowser().then((ready) => {
+  reconnectTrackers(): void {
+    this.browser.removeAllListeners();
+    this.prepareBrowser().then(() => {
       Log.breakline();
       this.trackers.forEach((tracker, key) => {
         if (tracker) {
