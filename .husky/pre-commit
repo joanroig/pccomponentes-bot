@@ -2,10 +2,18 @@
 . "$(dirname "$0")/_/husky.sh"
 . "$(dirname "$0")/common.sh"
 
+# Prevent comitting into master
+branch=$(git branch --show-current)
+
+if [ "$branch" = "master" ]; then
+  echo "You can't commit directly to master branch"
+  exit 1
+fi
+
 # Full paths of files from the repo root that should not be committed, separated by newlines
 MUST_NOT_CHANGE='.env'
 
-# Format code of staged files with Prettier
+# Format staged files with eslint and prettier as a plugin
 yarn run format:staged
 
 # Exclude from the commit by unstaging the files
@@ -29,7 +37,7 @@ then
   exit 1
 else
   # Increase package.json version
-  yarn version --no-git-tag-version --patch 
-  git add package.json
+  # yarn version --no-git-tag-version --patch 
+  # git add package.json
   exit 0
 fi
