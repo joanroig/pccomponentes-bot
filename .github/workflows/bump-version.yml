@@ -23,20 +23,20 @@ jobs:
         with:
           node-version: 12
       - name: Configure CI Git User
-          run: |
-            git config --global user.name '@joanroig'
-            git config --global user.email 'joanroig@users.noreply.github.com'
+        run: |
+          git config --global user.name '@joanroig'
+          git config --global user.email 'joanroig@users.noreply.github.com'
 
       - name: "Automated Version Bump"
         id: version-bump
         uses: "phips28/gh-action-bump-version@master"
         with:
-          tag-prefix: ''
+          tag-prefix: ""
         env:
           GITHUB_TOKEN: ${{ secrets.BUMP_VERSION_ACTION_TOKEN }}
       - name: "cat package.json"
         run: cat ./package.json
-      - name:  'Output Step'
+      - name: "Output Step"
         env:
           NEW_TAG: ${{ steps.version-bump.outputs.newTag }}
         run: echo "new tag $NEW_TAG"
