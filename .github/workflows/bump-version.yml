@@ -16,4 +16,4 @@ jobs:
           token: ${{ secrets.BUMP_VERSION_ACTION_TOKEN }}
           fetch-depth: 0
       - name: "Bump version"
-        uses: Wawa27/automatic-version-bump@master
+        uses: Wawa27/automatic-version-bump@1.0.0
