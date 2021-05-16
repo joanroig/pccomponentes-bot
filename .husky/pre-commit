@@ -2,7 +2,7 @@
 . "$(dirname "$0")/_/husky.sh"
 . "$(dirname "$0")/common.sh"
 
-# Prevent comitting into master
+# Prevent committing into master
 branch=$(git branch --show-current)
 
 if [ "$branch" = "master" ]; then
