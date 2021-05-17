@@ -4,7 +4,7 @@ export default class Validator {
   private readonly outletValidator: ValidateFunction<unknown>;
 
   constructor() {
-    this.outletValidator = this.prepareoutletValidator();
+    this.outletValidator = this.prepareOutletValidator();
   }
 
   validateOutletArticle(json: any): boolean {
@@ -15,7 +15,7 @@ export default class Validator {
     return this.outletValidator.errors;
   }
 
-  private prepareoutletValidator(): ValidateFunction<unknown> {
+  private prepareOutletValidator(): ValidateFunction<unknown> {
     const ajv = new Ajv();
     const schema = {
       type: "object",

@@ -7,7 +7,7 @@ import { Service } from "typedi";
 import config from "../config.json";
 import puppeteerConfig from "../puppeteer-config.json";
 import ArticleTracker from "./article-tracker";
-import { CategoryConfig } from "./models";
+import { BotConfig, CategoryConfig } from "./models";
 import NotifyService from "./services/notify.service";
 import PurchaseService from "./services/purchase.service";
 import Log from "./utils/log";
@@ -18,6 +18,7 @@ export default class Bot {
   private readonly purchase = config.purchase;
   private readonly debug = puppeteerConfig.debug;
   private browser!: Browser;
+  private readonly botConfig: BotConfig;
 
   private readonly trackers = new Map<string, ArticleTracker>();
 
@@ -33,6 +34,12 @@ export default class Bot {
     process.on("SIGHUP", () => {
       this.stop();
     });
+
+    this.botConfig = new BotConfig(
+      config.notify,
+      config.purchase,
+      config.saveLogs
+    );
   }
 
   async prepareBrowser(): Promise<boolean> {
@@ -69,18 +76,15 @@ export default class Bot {
   }
 
   async start(): Promise<void> {
-    Log.breakline();
-    Log.info(process.env.npm_package_name);
-    Log.info("Version " + process.env.npm_package_version);
-    Log.breakline();
+    Log.Init(this.botConfig.saveLogs ? true : false);
     Log.info("Current configuration:");
     Log.breakline();
-    if (config.notify) {
+    if (this.botConfig.notify) {
       Log.config("Notifications enabled.", true);
       // Setup the telegram bot
       await this.notifyService.startTelegram();
-      this.notifyService.getUpdateRequest().subscribe(() => {
-        this.updateTrackers();
+      this.notifyService.getRefreshRequest().subscribe(() => {
+        this.refreshTrackers();
       });
       this.notifyService.getShutdownRequest().subscribe(() => {
         this.stop();
@@ -88,7 +92,7 @@ export default class Bot {
     } else {
       Log.config("Notifications disabled.", false);
     }
-    if (config.purchase) {
+    if (this.botConfig.purchase) {
       Log.config("Purchase enabled, but still not implemented.", false);
     } else {
       Log.config("Purchase disabled.", false);
@@ -137,20 +141,21 @@ export default class Bot {
     }, 5000);
   }
 
-  updateTrackers(): void {
+  refreshTrackers(): void {
     this.trackers.forEach((tracker, key) => {
       if (tracker) {
-        tracker.update();
+        tracker.update(true);
       } else {
         Log.error(
-          "Tracker could not be updated because it was not found: " + key
+          "Tracker could not be refreshed because it was not found: " + key
         );
       }
     });
   }
 
-  reconnectTrackers(): void {
+  async reconnectTrackers(): Promise<void> {
     this.browser.removeAllListeners();
+    await this.browser.close();
     this.prepareBrowser().then(() => {
       Log.breakline();
       this.trackers.forEach((tracker, key) => {

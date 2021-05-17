@@ -1,0 +1,24 @@
+{
+  "notify": true,
+  "purchase": false,
+  "saveLogs": true,
+  "categories": {
+    "GPUs": {
+      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6",
+      "articles": [
+        {
+          "model": ["3060"]
+        },
+        {
+          "model": ["3070"]
+        },
+        {
+          "model": ["3080"]
+        },
+        {
+          "model": ["3090"]
+        }
+      ]
+    }
+  }
+}
