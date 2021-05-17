@@ -1,53 +1,31 @@
 {
   "notify": true,
   "purchase": false,
+  "saveLogs": true,
   "categories": {
     "GPUs": {
-      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6&page=0&order=new",
-      "minUpdateSeconds": 20,
-      "maxUpdateSeconds": 30,
+      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6",
       "articles": [
         {
           "model": ["2060", "super"],
-          "maxPrice": 320
+          "maxPrice": 350,
+          "purchase": false
         },
         {
           "model": ["2070"],
-          "maxPrice": 350
+          "maxPrice": 380
         },
         {
-          "model": ["2070", "super", "msi"],
-          "maxPrice": 370
+          "model": ["2070", "super"],
+          "maxPrice": 400
         },
         {
           "model": ["3060"],
-          "maxPrice": 440
+          "maxPrice": 500
         },
         {
-          "model": ["3070", "evga"],
-          "maxPrice": 540
-        }
-      ]
-    },
-    "CPUs": {
-      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=4&page=0&order=new",
-      "maxPrice": 600,
-      "articles": [
-        {
-          "model": ["amd", "5800x"]
-        },
-        {
-          "model": ["amd", "5900x"],
-          "purchase": false
-        }
-      ]
-    },
-    "Motherboards": {
-      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=3&page=0&order=new",
-      "purchase": false,
-      "articles": [
-        {
-          "model": ["Asus", "ROG", "STRIX", "B450-F", "GAMING"]
+          "model": ["3070"],
+          "maxPrice": 600
         }
       ]
     }

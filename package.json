@@ -1,6 +1,6 @@
 {
   "name": "pccomponentes-outlet-bot",
-  "version": "1.4.1",
+  "version": "1.4.5",
   "author": "Joan Roig",
   "license": "MIT",
   "description": "Bot for the PcComponentes outlet, it sends Telegram messages and can do automatic purchases. Useful for tracking graphics cards, processors, etc.",
@@ -41,7 +41,7 @@
     "ghost-cursor": "^1.1.5",
     "html2json": "^1.0.2",
     "node-fetch": "^2.6.1",
-    "open": "^8.0.8",
+    "open": "^8.0.9",
     "puppeteer": "^9.1.1",
     "puppeteer-extra": "^3.1.18",
     "puppeteer-extra-plugin-adblocker": "^2.11.11",

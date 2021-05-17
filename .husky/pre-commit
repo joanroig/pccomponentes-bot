@@ -36,8 +36,5 @@ then
   echo Commit would modify one or more files that must not change: "$MUST_NOT_CHANGE"
   exit 1
 else
-  # Increase package.json version
-  # yarn version --no-git-tag-version --patch 
-  # git add package.json
   exit 0
 fi
