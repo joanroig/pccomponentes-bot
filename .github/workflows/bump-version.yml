@@ -18,14 +18,16 @@ jobs:
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BUMP_VERSION_ACTION_TOKEN }}
-          
+
       - name: "Bump version and push tag"
         id: changelog
         uses: TriPSs/conventional-changelog-action@v3
         with:
           github-token: ${{ secrets.BUMP_VERSION_ACTION_TOKEN }}
           git-message: "ci: version bump to {version}"
-          
+          git-user-name: "github-actions[bot]"
+          git-user-email: "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Create Release
         uses: actions/create-release@v1
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
