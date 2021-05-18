@@ -8,9 +8,10 @@ import { Service } from "typedi";
 import config from "../config.json";
 import puppeteerConfig from "../puppeteer-config.json";
 import ArticleTracker from "./article-tracker";
-import { Article, BotConfig } from "./models";
-import NotifyService from "./services/notify.service";
+import { BotConfig } from "./models";
 import LoginService from "./services/login.service";
+import NotifyService from "./services/notify.service";
+import ShutdownService from "./services/shutdown.service";
 import Log from "./utils/log";
 
 // Import environment configurations
@@ -24,66 +25,40 @@ export default class Bot {
 
   constructor(
     private readonly notifyService: NotifyService,
-    private readonly loginService: LoginService
+    private readonly loginService: LoginService,
+    private readonly shutdownService: ShutdownService
   ) {
     // Setup plugins (only once, do not put this in the prepareBrowser method!)
     puppeteer.use(StealthPlugin());
     puppeteer.use(AdblockerPlugin());
 
-    // Detect if the console is closed, then stop the bot completely
+    // Detect if the console is closed, then shutdown the bot completely
     process.on("SIGHUP", () => {
-      this.stop();
+      this.shutdown(0);
     });
 
     this.botConfig = plainToClass(BotConfig, config);
-  }
-
-  async prepareBrowser(): Promise<boolean> {
-    Log.breakline();
-    Log.info("Preparing browser...");
-
-    const configData = this.debug
-      ? puppeteerConfig.browserOptions.debug
-      : puppeteerConfig.browserOptions.headless;
-
-    try {
-      this.browser = await puppeteer.launch(configData);
-    } catch (error) {
-      Log.critical("Browser cannot be launched: " + error);
-      process.exit(1);
-    }
-
-    this.browser.on("disconnected", () => {
-      Log.error("Browser has been disconnected! Trying to reconnect...");
-      this.reconnectTrackers();
-    });
-
-    Log.success(`Browser ready!`);
-
-    if (this.botConfig.purchase) {
-      try {
-        return await this.loginService.login(this.browser, this.debug);
-      } catch (error) {
-        Log.error("Exception thrown while logging in: " + error);
-        return false;
-      }
-    }
-    return true;
   }
 
   async start(): Promise<void> {
     Log.Init(this.botConfig.saveLogs ? true : false);
     Log.info("Current configuration:");
     Log.breakline();
+
+    this.shutdownService.getShutdownRequest().subscribe((code) => {
+      this.shutdown(code);
+    });
+
     if (this.botConfig.notify) {
       Log.config("Notifications enabled.", true);
       // Setup the telegram bot
-      await this.notifyService.startTelegram();
+      const started = await this.notifyService.startTelegram();
+      if (!started) {
+        this.shutdownService.sendShutdownRequest(1);
+        return;
+      }
       this.notifyService.getRefreshRequest().subscribe(() => {
         this.refreshTrackers();
-      });
-      this.notifyService.getShutdownRequest().subscribe(() => {
-        this.stop();
       });
     } else {
       Log.config("Notifications disabled.", false);
@@ -96,7 +71,7 @@ export default class Bot {
 
     this.prepareBrowser().then((success) => {
       if (!success) {
-        this.notifyService.sendShutdownRequest(1);
+        this.shutdown(1);
         return;
       }
 
@@ -127,14 +102,50 @@ export default class Bot {
     });
   }
 
-  async stop(): Promise<void> {
-    this.notifyService.stopMessage();
+  async shutdown(code: number): Promise<void> {
+    this.notifyService.shutdownMessage();
     this.trackers.forEach((tracker) => tracker.stop());
-    this.browser.removeAllListeners();
-    await this.browser.close();
+    if (this.browser) {
+      this.browser.removeAllListeners();
+      await this.browser.close();
+    }
     setTimeout(() => {
-      process.exit(0);
+      process.exit(code);
     }, 5000);
+  }
+
+  async prepareBrowser(): Promise<boolean> {
+    Log.breakline();
+    Log.info("Preparing browser...");
+
+    const configData = this.debug
+      ? puppeteerConfig.browserOptions.debug
+      : puppeteerConfig.browserOptions.headless;
+
+    try {
+      this.browser = await puppeteer.launch(configData);
+    } catch (error) {
+      Log.critical("Browser cannot be launched: " + error);
+      this.shutdown(1);
+      return false;
+    }
+
+    this.browser.on("disconnected", () => {
+      Log.error("Browser has been disconnected! Trying to reconnect...");
+      this.reconnectTrackers();
+    });
+
+    Log.success(`Browser ready!`);
+
+    if (this.botConfig.purchase) {
+      try {
+        return await this.loginService.login(this.browser, this.debug);
+      } catch (error) {
+        Log.error("Exception thrown while logging in: " + error);
+        return false;
+      }
+    }
+    return true;
   }
 
   refreshTrackers(): void {
