@@ -17,11 +17,11 @@ export default class Log {
       });
     }
 
-    Log.info("\n------------------------");
-    Log.info(process.env.npm_package_name);
+    Log.info("\n-----------------------");
+    Log.info("   " + process.env.npm_package_name);
     Log.info("", true);
     Log.info("     Version " + process.env.npm_package_version);
-    Log.info("------------------------");
+    Log.info("-----------------------");
     Log.breakline();
   }
 

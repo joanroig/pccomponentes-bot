@@ -17,16 +17,17 @@ const html2json = require("html2json").html2json;
  * Instantiable class that will take care of tracking a article, send notifications and purchasing it if needed.
  */
 export default class ArticleTracker {
-  private readonly id: string;
+  private readonly name: string;
   private readonly config: CategoryConfig;
   private readonly debug: boolean;
   private readonly purchase: boolean;
-  private readonly purchased: Article[] = [];
+  private readonly purchaseSame: boolean;
 
   private previous: Article[] = [];
   // private buying = false;
   private done = false;
   private checking = false;
+  private notifyNextMatch = false;
 
   private browser: Browser;
   private page!: Page;
@@ -41,12 +42,14 @@ export default class ArticleTracker {
     config: CategoryConfig,
     browser: Browser,
     purchase: boolean,
+    purchaseSame: boolean,
     debug: boolean
   ) {
-    this.id = id;
+    this.name = id;
     this.config = config;
     this.browser = browser;
     this.purchase = purchase;
+    this.purchaseSame = purchaseSame;
     this.debug = debug;
     this.start();
   }
@@ -60,6 +63,10 @@ export default class ArticleTracker {
 
     // Infinite loop
     this.loop();
+  }
+
+  getName(): string {
+    return this.name;
   }
 
   stop(): void {
@@ -80,7 +87,7 @@ export default class ArticleTracker {
   // Infinite loop with a pseudo-random timeout to fetch data imitating a human behaviour
   loop(): void {
     if (this.done) {
-      Log.success(`'${this.id} tracker' - Stopped successfully.`, true);
+      Log.success(`'${this.name} tracker' - Stopped successfully.`, true);
       return;
     }
 
@@ -91,18 +98,22 @@ export default class ArticleTracker {
   }
 
   async update(notify?: boolean): Promise<void> {
+    if (notify) {
+      this.notifyNextMatch = true;
+    }
+
     if (this.done) {
       return;
     }
 
     if (!this.browser.isConnected()) {
-      Log.error(`'${this.id} tracker' - Browser is disconnected!`, true);
+      Log.error(`'${this.name} tracker' - Browser is disconnected!`, true);
       return;
     }
 
     if (this.checking) {
       Log.important(
-        `'${this.id} tracker' - Tried to update again while still checking data, reduce the update time or the number of pages to check in 'config.json'`,
+        `'${this.name} tracker' - Tried to update again while still checking data, reduce the update time or the number of pages to check in 'config.json'`,
         true
       );
       return;
@@ -120,7 +131,7 @@ export default class ArticleTracker {
       pages = await this.checkPages(0, "");
     } catch (error) {
       Log.error(
-        `'${this.id} tracker' - Error while checking page data: ${error}`,
+        `'${this.name} tracker' - Error while checking page data: ${error}`,
         true
       );
       this.checking = false;
@@ -131,10 +142,10 @@ export default class ArticleTracker {
     const json = html2json(pages);
 
     // Check the JSON schema validity
-    const valid = this.validator.validateOutletArticle(json);
+    const valid = this.validator.validateArticle(json);
     if (!valid) {
       Log.error(
-        `'${this.id} tracker' - JSON validation error: ${JSON.stringify(
+        `'${this.name} tracker' - JSON validation error: ${JSON.stringify(
           this.validator.getLastError()
         )} `
       );
@@ -144,9 +155,11 @@ export default class ArticleTracker {
 
     const matches = this.processData(json);
 
-    if (notify) {
+    // Notify the next matches if requested, ensures the sending of the notification in case the tracker is still checking data
+    if (this.notifyNextMatch) {
+      this.notifyNextMatch = false;
       this.notifyService.notify(
-        `'${this.id} tracker' - All articles available:`,
+        `'${this.name} tracker' - All articles available:`,
         matches.map((v) => v.match)
       );
     }
@@ -155,9 +168,12 @@ export default class ArticleTracker {
   }
 
   async checkPages(pageCount: number, result: string): Promise<string> {
-    await this.page.goto(this.config.url + `&page=${pageCount}&order=new`, {
-      waitUntil: "networkidle2",
-    });
+    await this.page.goto(
+      this.config.url + `&page=${pageCount}&order=${this.config.order}`,
+      {
+        waitUntil: "networkidle2",
+      }
+    );
 
     const bodyHTML = await this.page.evaluate(() => document.body.innerHTML);
 
@@ -204,20 +220,40 @@ export default class ArticleTracker {
           v.toLowerCase()
         );
         let purchase = true;
+
         // Check if the price is below the maximum of this category (if defined)
         if (this.config.maxPrice && price >= this.config.maxPrice) {
           return;
         }
+
+        // Check if out of stock
         if (
-          this.config.articles.some((a: ArticleConfig) => {
+          element.child.find((c: any) =>
+            c.text?.toLowerCase().includes("sin fecha de entrada")
+          )
+        ) {
+          return;
+        }
+
+        if (
+          this.config.articles.some((article: ArticleConfig) => {
             // Check if the price is below the maximum of this article (if defined)
-            if (a.maxPrice && price >= a.maxPrice) {
+            if (article.maxPrice && price >= article.maxPrice) {
               return false; // skip
             }
+
+            // Check if any of the excluded strings are in the title of the article
+            const excluded = this.config.exclude.concat(article.exclude);
+            if (excluded.some((e: string) => name.includes(e.toLowerCase()))) {
+              return false; // skip
+            }
+
             // Check if all strings of the model are in the title of the article
-            if (a.model.every((v: string) => name.includes(v.toLowerCase()))) {
+            if (
+              article.model.every((m: string) => name.includes(m.toLowerCase()))
+            ) {
               // Check if the purchase of this article is explicitly disabled
-              if (a.purchase === false) {
+              if (article.purchase === false) {
                 purchase = false;
               }
               return true;
@@ -248,7 +284,7 @@ export default class ArticleTracker {
 
     if (difference.length > 0) {
       Log.breakline();
-      Log.success(`'${this.id} tracker' - New articles found:`, true);
+      Log.success(`'${this.name} tracker' - New articles found:`, true);
       Log.important("\n" + difference.map((v) => v.match).join("\n\n"));
       Log.breakline();
 
@@ -262,7 +298,7 @@ export default class ArticleTracker {
       }
 
       this.notifyService.notify(
-        `'${this.id} tracker' - New articles found:`,
+        `'${this.name} tracker' - New articles found:`,
         difference.map((v) => v.match)
       );
 
@@ -271,7 +307,7 @@ export default class ArticleTracker {
         this.checkPurchaseConditions(difference);
       }
     } else {
-      Log.info(`'${this.id} tracker' - No new articles found...`, true);
+      Log.info(`'${this.name} tracker' - No new articles found...`, true);
     }
 
     // Update previous
@@ -282,8 +318,21 @@ export default class ArticleTracker {
 
   checkPurchaseConditions(articles: Article[]): void {
     articles.forEach((article) => {
+      if (this.purchaseSame === false) {
+        if (this.purchaseService.isAlreadyPurchased(article.link)) {
+          Log.important(
+            `'${this.name} tracker' - Already purchased, skipping:`
+          );
+          Log.breakline();
+          Log.success([article.match]);
+          Log.breakline();
+          return;
+        } else {
+          this.purchaseService.markAsPurchased(article.link);
+        }
+      }
       if (article.purchase) {
-        Log.success(`'${this.id} tracker' - Start purchase:`);
+        Log.success(`'${this.name} tracker' - Start purchase:`);
         Log.breakline();
         Log.success([article.match]);
         Log.breakline();

@@ -1,0 +1,20 @@
+{
+  "notify": true,
+  "purchase": false,
+  "saveLogs": true,
+  "categories": {
+    "GPUs": {
+      "url": "https://www.pccomponentes.com/listado/ajax?idFamilies[]=6&idFilters[]=2757",
+      "articles": [
+        {
+          "model": ["6900", "xt"],
+          "maxPrice": 2100
+        },
+        {
+          "model": ["6700", "xt"],
+          "maxPrice": 2100
+        }
+      ]
+    }
+  }
+}

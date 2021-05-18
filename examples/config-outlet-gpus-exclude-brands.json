@@ -1,0 +1,38 @@
+{
+  "notify": true,
+  "purchase": false,
+  "categories": [
+    {
+      "name": "Outlet GPUs",
+      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6",
+      "minUpdateSeconds": 5,
+      "maxUpdateSeconds": 8,
+      "openOnBrowser": true,
+      "checkPages": 1,
+      "articles": [
+        {
+          "model": ["1650"],
+          "maxPrice": 320,
+          "exclude": ["gigabyte"]
+        },
+        {
+          "model": ["2070"],
+          "maxPrice": 350
+        },
+        {
+          "model": ["2070", "super", "msi"],
+          "maxPrice": 370
+        },
+        {
+          "model": ["3060"],
+          "maxPrice": 440
+        },
+        {
+          "model": ["3070", "evga"],
+          "maxPrice": 540
+        }
+      ],
+      "exclude": ["zotac", "pny", "palit", "kfa2"]
+    }
+  ]
+}

@@ -1,3 +1,3 @@
-# PcComponentes Outlet Bot - Configuration
+# PcComponentes Bot - Configuration
 
 In progress...
