@@ -4,27 +4,21 @@ import { Observable, Subject } from "rxjs";
 import { Context, Telegraf } from "telegraf";
 import { Service } from "typedi";
 import Log from "../utils/log";
+import ShutdownService from "./shutdown.service";
 
 @Service()
 export default class NotifyService {
   private telegraf!: Telegraf;
   private sendNotifications = false;
   public refreshRequest = new Subject<boolean>();
-  public shutdownRequest = new Subject<number>();
+
+  constructor(private readonly shutdownService: ShutdownService) {}
 
   getRefreshRequest(): Observable<boolean> {
     return this.refreshRequest.asObservable();
   }
 
-  getShutdownRequest(): Observable<number> {
-    return this.shutdownRequest.asObservable();
-  }
-
-  sendShutdownRequest(status: number): void {
-    this.shutdownRequest.next(status);
-  }
-
-  async startTelegram(): Promise<void> {
+  async startTelegram(): Promise<boolean> {
     if (process.env.BOT_TOKEN) {
       // Remove all commands sent while the bot was offline
       try {
@@ -39,10 +33,12 @@ export default class NotifyService {
 
       this.telegraf = new Telegraf(process.env.BOT_TOKEN);
     } else {
+      Log.breakline();
       Log.critical(
         "Please, set the BOT_TOKEN in the .env file (explained in the README.md)"
       );
-      process.exit(1);
+      Log.breakline();
+      return false;
     }
 
     const telegraf = this.telegraf;
@@ -119,7 +115,7 @@ export default class NotifyService {
     telegraf.hears(["/headshot"], () => {
       Log.important("Telegram: Shutdown confirmation received.");
       Log.breakline();
-      this.sendShutdownRequest(0);
+      this.shutdownService.sendShutdownRequest(0);
     });
 
     telegraf.launch().catch((error) => {
@@ -129,6 +125,8 @@ export default class NotifyService {
     });
 
     this.sendNotifications = true;
+
+    return true;
   }
 
   // Send a message using the Telegram bot
@@ -160,7 +158,7 @@ export default class NotifyService {
     );
   }
 
-  stopMessage(): void {
+  shutdownMessage(): void {
     const message = "👋 Shutting down in 5 seconds...";
     this.notify(message);
     Log.important(message);
