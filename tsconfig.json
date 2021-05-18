@@ -24,6 +24,5 @@
   },
   "lib": ["es2015"],
   "include": ["src/*"],
-  "exclude": ["node_modules/"],
-  "files": ["./src/html2json.d.ts"]
+  "exclude": ["node_modules/"]
 }

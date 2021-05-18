@@ -1,35 +1,36 @@
 {
   "notify": true,
   "purchase": false,
+  "saveLogs": true,
   "categories": {
     "GPUs": {
-      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6&page=0&order=new",
+      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6",
       "articles": [
         {
           "model": ["2060", "super"],
-          "price": 320
+          "maxPrice": 320
         },
         {
           "model": ["2070"],
-          "price": 350
+          "maxPrice": 350
         },
         {
           "model": ["2070", "super", "msi"],
-          "price": 370
+          "maxPrice": 370
         },
         {
           "model": ["3060"],
-          "price": 440
+          "maxPrice": 440
         },
         {
           "model": ["3070", "evga"],
-          "price": 540
+          "maxPrice": 540
         }
       ]
     },
     "CPUs": {
-      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=4&page=0&order=new",
-      "maxPrice": 400,
+      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=4",
+      "maxPrice": 600,
       "articles": [
         {
           "model": ["amd", "5800x"]
@@ -41,7 +42,7 @@
       ]
     },
     "Motherboards": {
-      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=3&page=0&order=new",
+      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=3",
       "purchase": false,
       "articles": [
         {

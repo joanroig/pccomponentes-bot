@@ -1,21 +1,21 @@
 import Ajv, { ValidateFunction } from "ajv";
 
 export default class Validator {
-  private readonly outletValidator: ValidateFunction<unknown>;
+  private readonly articleValidator: ValidateFunction<unknown>;
 
   constructor() {
-    this.outletValidator = this.prepareoutletValidator();
+    this.articleValidator = this.prepareArticleValidator();
   }
 
-  validateOutletArticle(json: any): boolean {
-    return this.outletValidator(json);
+  validateArticle(json: any): boolean {
+    return this.articleValidator(json);
   }
 
   getLastError() {
-    return this.outletValidator.errors;
+    return this.articleValidator.errors;
   }
 
-  private prepareoutletValidator(): ValidateFunction<unknown> {
+  private prepareArticleValidator(): ValidateFunction<unknown> {
     const ajv = new Ajv();
     const schema = {
       type: "object",

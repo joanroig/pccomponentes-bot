@@ -28,16 +28,6 @@ export default class Utils {
     }
   }
 
-  static randomTimeout(
-    minUpdateSeconds: number,
-    maxUpdateSeconds: number
-  ): number {
-    // Math.random() * (max - min + 1) + min); // Generate a number in a range
-    const min = minUpdateSeconds * 1000;
-    const max = maxUpdateSeconds * 1000;
-    return Math.round(Math.random() * (max - min + 1)) + min;
-  }
-
   static async createHeadlessPage(browser: Browser): Promise<Page> {
     const page = await browser.newPage();
 

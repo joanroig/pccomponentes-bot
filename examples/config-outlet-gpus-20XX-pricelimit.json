@@ -1,0 +1,27 @@
+{
+  "notify": true,
+  "purchase": false,
+  "saveLogs": true,
+  "categories": {
+    "GPUs": {
+      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6",
+      "maxPrice": 600,
+      "articles": [
+        {
+          "model": ["2060"],
+          "maxPrice": 350
+        },
+        {
+          "model": ["2060", "super"],
+          "maxPrice": 400
+        },
+        {
+          "model": ["2070"]
+        },
+        {
+          "model": ["2080"]
+        }
+      ]
+    }
+  }
+}
