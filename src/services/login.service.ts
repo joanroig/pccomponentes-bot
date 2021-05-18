@@ -17,16 +17,19 @@ export default class LoginService {
   constructor(private readonly notifyService: NotifyService) {
     this.email = process.env.PCC_USER || "";
     this.password = process.env.PCC_PASS || "";
-    if (this.email == "" || this.password == "") {
-      Log.critical("Login failed due missing data. Check your credentials.");
-      this.notifyService.notify(
-        `Login attempt failed due missing data, check the credentials. Bot stopped.`
-      );
-      this.notifyService.sendShutdownRequest(1);
-    }
   }
 
   async login(browser: Browser, debug: boolean): Promise<boolean> {
+    if (this.email == "" || this.password == "") {
+      Log.breakline();
+      Log.critical("Login failed due missing data. Check your credentials.");
+      Log.breakline();
+      this.notifyService.notify(
+        `Login attempt failed due missing data, check the credentials. Bot stopped.`
+      );
+      return false;
+    }
+
     const loginPage = debug
       ? await browser.newPage()
       : await Utils.createHeadlessPage(browser);
