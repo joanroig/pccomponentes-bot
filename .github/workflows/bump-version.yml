@@ -19,7 +19,7 @@ jobs:
           ref: ${{ github.ref }}
           token: ${{ secrets.BUMP_VERSION_ACTION_TOKEN }}
       - name: "Bump version and push tag"
-        uses: TriPSs/conventional-changelog-action@master
+        uses: TriPSs/conventional-changelog-action@v3
         with:
           github-token: ${{ secrets.BUMP_VERSION_ACTION_TOKEN }}
           git-message: "ci: version bump to {version}"
