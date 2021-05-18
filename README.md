@@ -1,12 +1,15 @@
-# PcComponentes Outlet Bot
+# PcComponentes Bot
 
 Receive a Telegram message when a article is back to stock!
-Implemented for the outlet section of PcComponentes.com, useful for tracking:
+Implemented for PcComponentes.com stock and outlet articles, useful for tracking:
 
 - Graphic cards
 - Processors
+- Motherboards
 
 In progress: Automatic purchase (no credit card needed).
+
+**The bot may fail from time to time due changes in the website, new issues and pull requests are welcome.**
 
 > ⚠️ Disclaimer: Please note that this is a research project. I am by no means responsible for any usage of this tool. Use it on your behalf.
 
@@ -91,7 +94,7 @@ Then set `"debug":false` again and check it the problem is solved.
 
 ### An issue is not listed here?
 
-Please check the [open](https://github.com/joanroig/pccomponentes-outlet-bot/labels/bug) and [closed](https://github.com/joanroig/pccomponentes-outlet-bot/issues?q=is%3Aclosed+label%3Abug) bugs in the issue tracker for the details of your bug. If you can't find it, open a [new issue](https://github.com/joanroig/pccomponentes-outlet-bot/issues/new?assignees=joanroig&labels=bug&template=bug_report.md&title=%5BBUG%5D+).
+Please check the [open](https://github.com/joanroig/pccomponentes-bot/labels/bug) and [closed](https://github.com/joanroig/pccomponentes-bot/issues?q=is%3Aclosed+label%3Abug) bugs in the issue tracker for the details of your bug. If you can't find it, open a [new issue](https://github.com/joanroig/pccomponentes-bot/issues/new?assignees=joanroig&labels=bug&template=bug_report.md&title=%5BBUG%5D+).
 
 ## Credits
 
