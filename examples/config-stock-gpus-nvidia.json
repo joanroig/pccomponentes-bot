@@ -1,9 +1,10 @@
 {
   "notify": true,
   "purchase": false,
+  "saveLogs": true,
   "categories": {
     "GPUs": {
-      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6&page=0&order=new",
+      "url": "https://www.pccomponentes.com/listado/ajax?idFamilies[]=6&idFilters[]=2756",
       "articles": [
         {
           "model": ["2060", "super"],

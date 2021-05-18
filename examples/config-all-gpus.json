@@ -1,11 +1,11 @@
 {
   "notify": true,
   "purchase": false,
+  "saveLogs": true,
   "categories": [
     {
       "name": "Outlet GPUs",
       "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6",
-      "checkPages": 1,
       "articles": [
         {
           "model": ["2060", "super"],
@@ -32,7 +32,6 @@
     {
       "name": "Stock GPUs",
       "url": "https://www.pccomponentes.com/listado/ajax?idFamilies[]=6",
-      "checkPages": 8,
       "articles": [
         {
           "model": ["2060", "super"],

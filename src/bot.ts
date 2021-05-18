@@ -1,3 +1,4 @@
+import { plainToClass } from "class-transformer";
 import "dotenv/config";
 import { Browser } from "puppeteer";
 import puppeteer from "puppeteer-extra";
@@ -7,23 +8,23 @@ import { Service } from "typedi";
 import config from "../config.json";
 import puppeteerConfig from "../puppeteer-config.json";
 import ArticleTracker from "./article-tracker";
-import { CategoryConfig } from "./models";
+import { Article, BotConfig } from "./models";
 import NotifyService from "./services/notify.service";
-import PurchaseService from "./services/purchase.service";
+import LoginService from "./services/login.service";
 import Log from "./utils/log";
 
 // Import environment configurations
 @Service()
 export default class Bot {
-  private readonly purchase = config.purchase;
   private readonly debug = puppeteerConfig.debug;
   private browser!: Browser;
+  private readonly botConfig: BotConfig;
 
-  private readonly trackers = new Map<string, ArticleTracker>();
+  private readonly trackers = new Map<number, ArticleTracker>();
 
   constructor(
     private readonly notifyService: NotifyService,
-    private readonly purchaseService: PurchaseService
+    private readonly loginService: LoginService
   ) {
     // Setup plugins (only once, do not put this in the prepareBrowser method!)
     puppeteer.use(StealthPlugin());
@@ -33,6 +34,8 @@ export default class Bot {
     process.on("SIGHUP", () => {
       this.stop();
     });
+
+    this.botConfig = plainToClass(BotConfig, config);
   }
 
   async prepareBrowser(): Promise<boolean> {
@@ -57,9 +60,9 @@ export default class Bot {
 
     Log.success(`Browser ready!`);
 
-    if (this.purchase) {
+    if (this.botConfig.purchase) {
       try {
-        return await this.purchaseService.login(this.browser, this.debug);
+        return await this.loginService.login(this.browser, this.debug);
       } catch (error) {
         Log.error("Exception thrown while logging in: " + error);
         return false;
@@ -69,18 +72,15 @@ export default class Bot {
   }
 
   async start(): Promise<void> {
-    Log.breakline();
-    Log.info(process.env.npm_package_name);
-    Log.info("Version " + process.env.npm_package_version);
-    Log.breakline();
+    Log.Init(this.botConfig.saveLogs ? true : false);
     Log.info("Current configuration:");
     Log.breakline();
-    if (config.notify) {
+    if (this.botConfig.notify) {
       Log.config("Notifications enabled.", true);
       // Setup the telegram bot
       await this.notifyService.startTelegram();
-      this.notifyService.getUpdateRequest().subscribe(() => {
-        this.updateTrackers();
+      this.notifyService.getRefreshRequest().subscribe(() => {
+        this.refreshTrackers();
       });
       this.notifyService.getShutdownRequest().subscribe(() => {
         this.stop();
@@ -88,7 +88,7 @@ export default class Bot {
     } else {
       Log.config("Notifications disabled.", false);
     }
-    if (config.purchase) {
+    if (this.botConfig.purchase) {
       Log.config("Purchase enabled, but still not implemented.", false);
     } else {
       Log.config("Purchase disabled.", false);
@@ -104,18 +104,18 @@ export default class Bot {
       Log.info("Preparing trackers...");
 
       // Create a tracker for each category to track
-      for (const [key, value] of Object.entries(config.categories)) {
-        const categoryConfig = new CategoryConfig(value);
+      this.botConfig.categories.forEach((category, index) => {
         const tracker = new ArticleTracker(
-          key,
-          categoryConfig,
+          category.name,
+          category,
           this.browser,
-          this.purchase,
+          this.botConfig.purchase,
+          this.botConfig.purchaseSame,
           this.debug
         );
-        this.trackers.set(key, tracker);
-        Log.success(`${key}: Article tracker started.`);
-      }
+        this.trackers.set(index, tracker);
+        Log.success(`${category.name}: Article tracker started.`);
+      });
 
       Log.breakline();
       Log.config(
@@ -137,29 +137,32 @@ export default class Bot {
     }, 5000);
   }
 
-  updateTrackers(): void {
+  refreshTrackers(): void {
     this.trackers.forEach((tracker, key) => {
       if (tracker) {
-        tracker.update();
+        tracker.update(true);
       } else {
         Log.error(
-          "Tracker could not be updated because it was not found: " + key
+          "Tracker could not be refreshed because it was not found. Tracker id: " +
+            key
         );
       }
     });
   }
 
-  reconnectTrackers(): void {
+  async reconnectTrackers(): Promise<void> {
     this.browser.removeAllListeners();
+    this.browser.close(); // Do not await
     this.prepareBrowser().then(() => {
       Log.breakline();
       this.trackers.forEach((tracker, key) => {
         if (tracker) {
-          Log.important("Reconnecting tracker: " + key);
+          Log.important("Reconnecting tracker: " + tracker.getName());
           tracker.reconnect(this.browser);
         } else {
           Log.error(
-            "Tracker could not be reconnected because it was not found: " + key
+            "Tracker could not be reconnected because it was not found: Tracker id: " +
+              key
           );
         }
       });

@@ -1,0 +1,19 @@
+{
+  "notify": true,
+  "purchase": false,
+  "saveLogs": true,
+  "categories": {
+    "GPUs": {
+      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6",
+      "maxPrice": 300,
+      "articles": [
+        {
+          "model": ["1650"]
+        },
+        {
+          "model": ["1660"]
+        }
+      ]
+    }
+  }
+}

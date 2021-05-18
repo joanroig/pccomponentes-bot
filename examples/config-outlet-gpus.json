@@ -1,0 +1,32 @@
+{
+  "notify": true,
+  "purchase": false,
+  "saveLogs": true,
+  "categories": {
+    "GPUs": {
+      "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6",
+      "articles": [
+        {
+          "model": ["2060", "super"],
+          "maxPrice": 320
+        },
+        {
+          "model": ["2070"],
+          "maxPrice": 350
+        },
+        {
+          "model": ["2070", "super", "msi"],
+          "maxPrice": 370
+        },
+        {
+          "model": ["3060"],
+          "maxPrice": 440
+        },
+        {
+          "model": ["3070", "evga"],
+          "maxPrice": 540
+        }
+      ]
+    }
+  }
+}

@@ -9,11 +9,11 @@ import Log from "../utils/log";
 export default class NotifyService {
   private telegraf!: Telegraf;
   private sendNotifications = false;
-  public updateRequest = new Subject<boolean>();
+  public refreshRequest = new Subject<boolean>();
   public shutdownRequest = new Subject<number>();
 
-  getUpdateRequest(): Observable<boolean> {
-    return this.updateRequest.asObservable();
+  getRefreshRequest(): Observable<boolean> {
+    return this.refreshRequest.asObservable();
   }
 
   getShutdownRequest(): Observable<number> {
@@ -85,9 +85,9 @@ export default class NotifyService {
 
     // Commands
     telegraf.hears(
-      ["👋", "/hi", "/hello", "Hi", "hi", "Hello", "hello"],
+      ["🙋", "🙋‍♀️", "🙋‍♂️", "/hi", "/hello", "Hi", "hi", "Hello", "hello"],
       (ctx: Context) => {
-        ctx.reply("👋 The bot is running.");
+        ctx.reply("🙋 The bot is running.");
         Log.breakline();
         Log.important("Telegram: Greeting command received.");
         Log.breakline();
@@ -97,25 +97,27 @@ export default class NotifyService {
     telegraf.hears(
       ["💫", "/update", "/refresh", "Update", "update", "Refresh", "refresh"],
       (ctx: Context) => {
-        this.updateRequest.next(true);
-        ctx.reply("💫 Data refresh requested.");
+        this.refreshRequest.next(true);
+        ctx.reply(
+          "💫 Refreshing all trackers and returning all matches (new and old ones)."
+        );
         Log.breakline();
         Log.important("Telegram: Data refresh command received.");
         Log.breakline();
       }
     );
 
-    telegraf.hears(["💀", "/shutdown"], (ctx: Context) => {
-      ctx.reply("💀 Send this command to confirm the shutdown: /headshot");
+    telegraf.hears(["👋", "/shutdown"], (ctx: Context) => {
+      ctx.reply("⚠️ Send this command to confirm the shutdown: /headshot");
       Log.breakline();
       Log.important(
-        "Telegram: Quit command received, asking for confirmation."
+        "Telegram: Shutdown command received, asking for confirmation."
       );
       Log.breakline();
     });
 
     telegraf.hears(["/headshot"], () => {
-      Log.important("Telegram: Quit command received.");
+      Log.important("Telegram: Shutdown confirmation received.");
       Log.breakline();
       this.sendShutdownRequest(0);
     });
@@ -154,7 +156,7 @@ export default class NotifyService {
 
   startMessage(): void {
     this.notify(
-      "🤖 BOT RUNNING 🤖\nTelegram commands you can write here:\n\n🚀 /start: Set the CHAT_ID to receive alerts\n🆔 /id: Print the CHAT_ID\n👋 /hello: Check if the bot is running\n💫 /refresh: Force a refresh of all trackers\n💀 /shutdown: Shutdown the bot."
+      "🤖 BOT RUNNING 🤖\nTelegram commands you can write here:\n\n🚀 /start: Set the CHAT_ID to receive alerts\n🆔 /id: Print the CHAT_ID\n🙋 /hello: Check if the bot is running\n💫 /refresh: Refresh and print all trackers\n👋 /shutdown: Shutdown the bot"
     );
   }
 
@@ -172,7 +174,7 @@ export default class NotifyService {
         Log.breakline();
         Log.critical("Error while saving the CHAT_ID automatically: " + err);
         Log.important(
-          "Create a .env file in the project's root directory and put this line in it, then restart the bot: " +
+          "Create a '.env' file in the project's root directory and put this line in it, then restart the bot: " +
             "\nCHAT_ID=" +
             chatId
         );
@@ -192,7 +194,7 @@ export default class NotifyService {
           Log.breakline();
           Log.critical("Error while saving the CHAT_ID automatically: " + err);
           Log.important(
-            "Put this line in the .env file, then restart the bot: " +
+            "Put this line in the '.env' file, then restart the bot: " +
               "\nCHAT_ID=" +
               chatId
           );
@@ -201,7 +203,7 @@ export default class NotifyService {
           // Set the chat id for this session
           process.env.CHAT_ID = String(chatId);
           Log.breakline();
-          Log.important("CHAT_ID saved in the .env file: " + chatId);
+          Log.important("CHAT_ID saved in the '.env' file: " + chatId);
           Log.breakline();
           this.startMessage();
         }
