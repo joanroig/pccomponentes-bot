@@ -1,10 +1,12 @@
-name: "Bump Version"
+name: "Bump version"
 
 on:
   push:
     branches:
       - "master"
-
+    paths-ignore:
+      - "package.json"
+      - "CHANGELOG.md"
 jobs:
   bump-version:
     name: "Bump Version on master"
@@ -12,26 +14,14 @@ jobs:
 
     steps:
       - name: "Checkout source code"
-        uses: "actions/checkout@v2"
+        uses: actions/checkout@v2
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BUMP_VERSION_ACTION_TOKEN }}
-      - name: "cat package.json"
-        run: cat ./package.json
-      - name: "Setup Node.js"
-        uses: "actions/setup-node@v1"
+      - name: "Bump version and push tag"
+        uses: TriPSs/conventional-changelog-action@master
         with:
-          node-version: 12
-      - name: "Automated Version Bump"
-        id: version-bump
-        uses: "phips28/gh-action-bump-version@master"
-        with:
-          tag-prefix: ""
-        env:
-          GITHUB_TOKEN: ${{ secrets.BUMP_VERSION_ACTION_TOKEN }}
-      - name: "cat package.json"
-        run: cat ./package.json
-      - name: "Output Step"
-        env:
-          NEW_TAG: ${{ steps.version-bump.outputs.newTag }}
-        run: echo "new tag $NEW_TAG"
+          github-token: ${{ secrets.BUMP_VERSION_ACTION_TOKEN }}
+          git-message: "ci: version bump to {version}"
+          preset: "angular"
+          output-file: "CHANGELOG.md"
