@@ -1,3 +1,5 @@
 # PcComponentes Bot - Configuration
 
-In progress...
+**Work in progress**
+
+## JSON Configurations
