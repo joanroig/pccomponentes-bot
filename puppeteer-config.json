@@ -1,5 +1,6 @@
 {
   "debug": false,
+  "plugins": false,
   "browserOptions": {
     "headless": {
       "headless": true,
