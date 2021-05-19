@@ -10,7 +10,7 @@ module.exports = {
     project: "tsconfig.json",
   },
   plugins: ["@typescript-eslint"],
-  ignorePatterns: [".eslintrc.js"],
+  ignorePatterns: [".eslintrc.js", "commitlint.config.js"],
   rules: {
     "prettier/prettier": "error",
     "@typescript-eslint/prefer-readonly": ["error"],
