@@ -9,17 +9,17 @@ on:
       - "CHANGELOG.md"
 jobs:
   bump-version:
-    name: "Bump Version on master"
+    name: Bump Version on master
     runs-on: ubuntu-latest
 
     steps:
-      - name: "Checkout source code"
+      - name: Checkout source code
         uses: actions/checkout@v2
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BUMP_VERSION_ACTION_TOKEN }}
 
-      - name: "Bump version and push tag"
+      - name: Bump version and push tag
         id: changelog
         uses: TriPSs/conventional-changelog-action@v3
         with:
@@ -37,3 +37,12 @@ jobs:
           tag_name: ${{ steps.changelog.outputs.tag }}
           release_name: ${{ steps.changelog.outputs.tag }}
           body: ${{ steps.changelog.outputs.clean_changelog }}
+
+      - name: Merge master -> develop
+        uses: everlytic/branch-merge@1.1.0
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        with:
+          github_token: ${{ github.token }}
+          source_ref: ${{ github.ref }}
+          target_branch: "develop"
+          commit_message_template: "ci: merge master into {target_branch}"
