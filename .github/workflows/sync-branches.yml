@@ -1,4 +1,4 @@
-name: "Sync branches"
+name: "Merge branches"
 
 # Controls when the action will run. 
 on:
@@ -22,4 +22,4 @@ jobs:
           github_token: ${{ github.token }}
           source_ref: ${{ github.ref }}
           target_branch: 'develop'
-          commit_message_template: 'ci: merge {source_ref} into {target_branch}'
+          commit_message_template: 'ci: merge master into {target_branch}'
