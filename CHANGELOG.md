@@ -1,3 +1,12 @@
+## [2.2.1](https://github.com/joanroig/pccomponentes-bot/compare/v2.2.0...v2.2.1) (2021-05-19)
+
+
+### Bug Fixes
+
+* prevent unnecessary merges to develop, use fast forward if possible ([6be3f3f](https://github.com/joanroig/pccomponentes-bot/commit/6be3f3f687adcc266d0f7b451e5ec250c4e72da8))
+
+
+
 # [2.2.0](https://github.com/joanroig/pccomponentes-bot/compare/v2.1.0...v2.2.0) (2021-05-19)
 
 
