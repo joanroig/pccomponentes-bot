@@ -6,9 +6,6 @@ on:
   push:
     branches: [ master ]
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
 jobs:
   merge-branch:
     # The type of runner that the job will run on
@@ -20,8 +17,9 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Merge master -> develop
-        uses: devmasx/merge-branch@v1.3.1
+        uses: everlytic/branch-merge@1.1.0
         with:
-          type: now
-          target_branch: develop
           github_token: ${{ github.token }}
+          source_ref: ${{ github.ref }}
+          target_branch: 'develop'
+          commit_message_template: 'ci: merge {source_ref} into {target_branch}'
