@@ -1,3 +1,12 @@
+# [2.2.0](https://github.com/joanroig/pccomponentes-bot/compare/v2.1.0...v2.2.0) (2021-05-19)
+
+
+### Features
+
+* more branches added the naming policy ([c333fbd](https://github.com/joanroig/pccomponentes-bot/commit/c333fbd9a0d95a2e8e18adfcbb619a0fa0555976))
+
+
+
 # [2.1.0](https://github.com/joanroig/pccomponentes-bot/compare/v2.0.2...v2.1.0) (2021-05-19)
 
 
@@ -25,10 +34,6 @@
 ### Bug Fixes
 
 * More consistent bot shutdown, moved to a dedicated service. ([c3ff493](https://github.com/joanroig/pccomponentes-bot/commit/c3ff493900b11d80eddfb90d04064c5f2f6889dd))
-
-
-
-## [1.4.5](https://github.com/joanroig/pccomponentes-bot/compare/v1.4.4...v1.4.5) (2021-05-16)
 
 
 
