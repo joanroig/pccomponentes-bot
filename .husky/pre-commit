@@ -10,6 +10,9 @@ if [ "$branch" = "master" ]; then
   exit 1
 fi
 
+# Update with the master branch to get the latest package.json version bump and changelog
+git pull origin master
+
 # Full paths of files from the repo root that should not be committed, separated by newlines
 MUST_NOT_CHANGE='.env'
 
