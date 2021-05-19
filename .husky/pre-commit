@@ -10,6 +10,14 @@ if [ "$branch" = "master" ]; then
   exit 1
 fi
 
+# Enforce branch naming policy
+valid_branch_regex='^((fix|feat)\/[a-zA-Z0-9\-]+)$|^(develop)$'
+message="There is something wrong with your branch name. Branch names in this project must adhere to this contract: $valid_branch_regex. Your commit will be rejected. You should rename your branch to a valid name and try again."
+if [[ ! $branch =~ $valid_branch_regex ]]; then
+  echo "$message"
+  exit 1
+fi
+
 # Update with the master branch to get the latest package.json version bump and changelog
 git pull origin master
 
