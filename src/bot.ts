@@ -18,6 +18,7 @@ import Log from "./utils/log";
 @Service()
 export default class Bot {
   private readonly debug = puppeteerConfig.debug;
+  private readonly plugins = puppeteerConfig.plugins;
   private browser!: Browser;
   private readonly botConfig: BotConfig;
 
@@ -28,16 +29,18 @@ export default class Bot {
     private readonly loginService: LoginService,
     private readonly shutdownService: ShutdownService
   ) {
-    // Setup plugins (only once, do not put this in the prepareBrowser method!)
-    puppeteer.use(StealthPlugin());
-    puppeteer.use(AdblockerPlugin());
+    this.botConfig = plainToClass(BotConfig, config);
+
+    if (this.plugins) {
+      // Setup puppeteer plugins (only once, do not put this in the prepareBrowser method!)
+      puppeteer.use(StealthPlugin());
+      puppeteer.use(AdblockerPlugin());
+    }
 
     // Detect if the console is closed, then shutdown the bot completely
     process.on("SIGHUP", () => {
       this.shutdown(0);
     });
-
-    this.botConfig = plainToClass(BotConfig, config);
   }
 
   async start(): Promise<void> {
@@ -69,37 +72,37 @@ export default class Bot {
       Log.config("Purchase disabled.", false);
     }
 
-    this.prepareBrowser().then((success) => {
-      if (!success) {
-        this.shutdown(1);
+    this.prepareBrowser().then(
+      (success) => {
+        Log.breakline();
+        Log.info("Preparing trackers...");
+
+        // Create a tracker for each category to track
+        this.botConfig.categories.forEach((category, index) => {
+          const tracker = new ArticleTracker(
+            category.name,
+            category,
+            this.browser,
+            this.botConfig.purchase,
+            this.botConfig.purchaseSame,
+            this.debug
+          );
+          this.trackers.set(index, tracker);
+          Log.success(`${category.name}: Article tracker started.`);
+        });
+
+        Log.breakline();
+        Log.config(
+          "-------------------\n*** BOT STARTED ***\n-------------------\n",
+          true
+        );
+
+        this.notifyService.startMessage();
+      },
+      (error) => {
         return;
       }
-
-      Log.breakline();
-      Log.info("Preparing trackers...");
-
-      // Create a tracker for each category to track
-      this.botConfig.categories.forEach((category, index) => {
-        const tracker = new ArticleTracker(
-          category.name,
-          category,
-          this.browser,
-          this.botConfig.purchase,
-          this.botConfig.purchaseSame,
-          this.debug
-        );
-        this.trackers.set(index, tracker);
-        Log.success(`${category.name}: Article tracker started.`);
-      });
-
-      Log.breakline();
-      Log.config(
-        "-------------------\n*** BOT STARTED ***\n-------------------\n",
-        true
-      );
-
-      this.notifyService.startMessage();
-    });
+    );
   }
 
   async shutdown(code: number): Promise<void> {
@@ -127,7 +130,7 @@ export default class Bot {
     } catch (error) {
       Log.critical("Browser cannot be launched: " + error);
       this.shutdown(1);
-      return false;
+      throw error;
     }
 
     this.browser.on("disconnected", () => {
@@ -142,7 +145,7 @@ export default class Bot {
         return await this.loginService.login(this.browser, this.debug);
       } catch (error) {
         Log.error("Exception thrown while logging in: " + error);
-        return false;
+        throw error;
       }
     }
     return true;
@@ -164,20 +167,25 @@ export default class Bot {
   async reconnectTrackers(): Promise<void> {
     this.browser.removeAllListeners();
     this.browser.close(); // Do not await
-    this.prepareBrowser().then(() => {
-      Log.breakline();
-      this.trackers.forEach((tracker, key) => {
-        if (tracker) {
-          Log.important("Reconnecting tracker: " + tracker.getName());
-          tracker.reconnect(this.browser);
-        } else {
-          Log.error(
-            "Tracker could not be reconnected because it was not found: Tracker id: " +
-              key
-          );
-        }
-      });
-      Log.breakline();
-    });
+    this.prepareBrowser().then(
+      (success) => {
+        Log.breakline();
+        this.trackers.forEach((tracker, key) => {
+          if (tracker) {
+            Log.important("Reconnecting tracker: " + tracker.getName());
+            tracker.reconnect(this.browser);
+          } else {
+            Log.error(
+              "Tracker could not be reconnected because it was not found: Tracker id: " +
+                key
+            );
+          }
+        });
+        Log.breakline();
+      },
+      (error) => {
+        return;
+      }
+    );
   }
 }
