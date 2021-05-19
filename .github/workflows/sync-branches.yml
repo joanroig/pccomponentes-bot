@@ -23,5 +23,5 @@ jobs:
         uses: devmasx/merge-branch@v1.3.1
         with:
           type: now
-          target_branch: uat
+          target_branch: develop
           github_token: ${{ github.token }}
