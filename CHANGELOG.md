@@ -1,3 +1,15 @@
+# [2.1.0](https://github.com/joanroig/pccomponentes-bot/compare/v2.0.2...v2.1.0) (2021-05-19)
+
+
+### Features
+
+* always pull master before committing ([511b1d3](https://github.com/joanroig/pccomponentes-bot/commit/511b1d32713c292de45bb8d1c597c57fbdade654))
+* commitlint added ([a97cbe7](https://github.com/joanroig/pccomponentes-bot/commit/a97cbe71b7b4185d07c0663bfaa9e60db234f75d))
+* configuration to make puppeteer plugins optional and proper error throw if the browser preparation fails ([eb55338](https://github.com/joanroig/pccomponentes-bot/commit/eb55338117cb9ecc9fe0a0e36ac38c6157144d84))
+* enforce branch naming policy ([03e59d5](https://github.com/joanroig/pccomponentes-bot/commit/03e59d5ec149aa89e6d5607ac1b51e70c1189a53))
+
+
+
 ## [2.0.2](https://github.com/joanroig/pccomponentes-bot/compare/v2.0.1...v2.0.2) (2021-05-18)
 
 
@@ -17,10 +29,6 @@
 
 
 ## [1.4.5](https://github.com/joanroig/pccomponentes-bot/compare/v1.4.4...v1.4.5) (2021-05-16)
-
-
-
-## [1.4.4](https://github.com/joanroig/pccomponentes-bot/compare/v1.4.3...v1.4.4) (2021-05-16)
 
 
 
