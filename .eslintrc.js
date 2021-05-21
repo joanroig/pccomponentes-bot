@@ -12,15 +12,12 @@ module.exports = {
   plugins: ["@typescript-eslint"],
   ignorePatterns: [".eslintrc.js", "commitlint.config.js"],
   rules: {
-    "prettier/prettier": "error",
     "@typescript-eslint/prefer-readonly": ["error"],
   },
   extends: [
-    // "standard",
     "eslint:recommended",
     "plugin:@typescript-eslint/eslint-recommended",
     "plugin:@typescript-eslint/recommended",
-    // "plugin:@typescript-eslint/recommended-requiring-type-checking",
-    "plugin:prettier/recommended", // sets prettier plugin and extends
+    "plugin:prettier/recommended", // sets prettier plugin, rules and extends
   ],
 };
