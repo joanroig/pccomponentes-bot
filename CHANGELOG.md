@@ -1,3 +1,12 @@
+## [2.2.2](https://github.com/joanroig/pccomponentes-bot/compare/v2.2.1...v2.2.2) (2021-05-21)
+
+
+### Bug Fixes
+
+* removed unnecessary lines from .eslintrc.js ([e853895](https://github.com/joanroig/pccomponentes-bot/commit/e8538958c60912a212091fddd013c6977ed7cb05))
+
+
+
 ## [2.2.1](https://github.com/joanroig/pccomponentes-bot/compare/v2.2.0...v2.2.1) (2021-05-19)
 
 
@@ -34,15 +43,6 @@
 ### Bug Fixes
 
 * Changed git user name and email for the bump version action ([bba2dd0](https://github.com/joanroig/pccomponentes-bot/commit/bba2dd048b33a3f8d81f76b089d59583b17bdb18))
-
-
-
-## [2.0.1](https://github.com/joanroig/pccomponentes-bot/compare/v2.0.0...v2.0.1) (2021-05-18)
-
-
-### Bug Fixes
-
-* More consistent bot shutdown, moved to a dedicated service. ([c3ff493](https://github.com/joanroig/pccomponentes-bot/commit/c3ff493900b11d80eddfb90d04064c5f2f6889dd))
 
 
 
