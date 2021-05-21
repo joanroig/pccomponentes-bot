@@ -1,5 +1,6 @@
 import { randomNumberRange } from "ghost-cursor/lib/math";
-import open from "open";
+import { html2json } from "html2json";
+import { open } from "open";
 import { Browser, Page } from "puppeteer";
 import sanitizeHtml from "sanitize-html";
 import Container from "typedi";
@@ -9,9 +10,6 @@ import PurchaseService from "./services/purchase.service";
 import Log from "./utils/log";
 import Utils from "./utils/utils";
 import Validator from "./validator";
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const html2json = require("html2json").html2json;
 
 /**
  * Instantiable class that will take care of tracking a article, send notifications and purchasing it if needed.

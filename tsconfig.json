@@ -12,7 +12,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "outDir": "dist",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "typeRoots": ["./node_modules/@types", "./src/typings.d.ts"]
     // "allowJs": true,
     // "skipLibCheck": true,
     // "isolatedModules": true,
@@ -24,5 +25,8 @@
   },
   "lib": ["es2015"],
   "include": ["src/*"],
-  "exclude": ["node_modules/"]
+  "exclude": ["node_modules/"],
+  "ts-node": {
+    "files": true
+  }
 }
