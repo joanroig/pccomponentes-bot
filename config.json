@@ -6,26 +6,25 @@
       "name": "Outlet GPUs",
       "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6",
       "checkPages": 1,
+      "minUpdateSeconds": 4,
+      "maxUpdateSeconds": 8,
+      "openOnBrowser": true,
       "articles": [
         {
-          "model": ["2060", "super"],
-          "maxPrice": 320
-        },
-        {
           "model": ["2070"],
-          "maxPrice": 350
+          "maxPrice": 360
         },
         {
-          "model": ["2070", "super", "msi"],
-          "maxPrice": 370
+          "model": ["2070", "super"],
+          "maxPrice": 380
         },
         {
           "model": ["3060"],
-          "maxPrice": 440
+          "maxPrice": 460
         },
         {
-          "model": ["3070", "evga"],
-          "maxPrice": 540
+          "model": ["3070"],
+          "maxPrice": 560
         }
       ]
     },
@@ -35,24 +34,20 @@
       "checkPages": 8,
       "articles": [
         {
-          "model": ["2060", "super"],
-          "maxPrice": 420
+          "model": ["2070"],
+          "maxPrice": 460
         },
         {
           "model": ["2070"],
-          "maxPrice": 450
-        },
-        {
-          "model": ["2070", "super", "msi"],
-          "maxPrice": 470
+          "maxPrice": 480
         },
         {
           "model": ["3060"],
           "maxPrice": 540
         },
         {
-          "model": ["3070", "evga"],
-          "maxPrice": 640
+          "model": ["3070"],
+          "maxPrice": 660
         }
       ]
     }

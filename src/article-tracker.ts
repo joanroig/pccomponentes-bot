@@ -1,6 +1,6 @@
 import { randomNumberRange } from "ghost-cursor/lib/math";
 import { html2json } from "html2json";
-import { open } from "open";
+import { open } from "out-url";
 import { Browser, Page } from "puppeteer";
 import sanitizeHtml from "sanitize-html";
 import Container from "typedi";
@@ -179,7 +179,7 @@ export default class ArticleTracker {
     const clean = sanitizeHtml(bodyHTML, {
       allowedTags: ["article", "a"],
       allowedAttributes: {
-        article: ["data-price", "data-name"],
+        article: ["data-price", "data-name", "data-id"],
         a: ["href"],
       },
     }).replace(/\n{2,}/g, "\n");
@@ -213,6 +213,7 @@ export default class ArticleTracker {
 
     json.child.forEach((element: any) => {
       if (element.attr && element.tag === "article") {
+        const id = element.attr["data-id"];
         const price = element.attr["data-price"];
         const name = element.attr["data-name"].map((v: string) =>
           v.toLowerCase()
@@ -266,7 +267,7 @@ export default class ArticleTracker {
           const nameText = `[${name.join([" "])}](${link})`;
           const priceText = `*${price} EUR*`;
           const match = `${priceText}\n${nameText}`;
-          const article: Article = { name, price, link, match, purchase };
+          const article: Article = { id, name, price, link, match, purchase };
           matches.push(article);
         }
       }
@@ -281,19 +282,17 @@ export default class ArticleTracker {
     );
 
     if (difference.length > 0) {
+      // Adds the item into the cart in the default browser
+      if (this.config.openOnBrowser) {
+        difference.forEach((a) => {
+          open("https://www.pccomponentes.com/cart/addItem/" + a.id);
+        });
+      }
+
       Log.breakline();
       Log.success(`'${this.name} tracker' - New articles found:`, true);
       Log.important("\n" + difference.map((v) => v.match).join("\n\n"));
       Log.breakline();
-
-      // opens the url in the default browser
-      if (this.config.openOnBrowser) {
-        difference
-          .map((v) => v.link)
-          .forEach((link) => {
-            open(link);
-          });
-      }
 
       this.notifyService.notify(
         `'${this.name} tracker' - New articles found:`,
