@@ -264,10 +264,20 @@ export default class ArticleTracker {
           const link =
             "https://www.pccomponentes.com" +
             element.child.find((a: any) => a.tag === "a").attr.href;
+          const purchaseLink =
+            "https://www.pccomponentes.com/cart/addItem/" + id;
           const nameText = `[${name.join([" "])}](${link})`;
           const priceText = `*${price} EUR*`;
           const match = `${priceText}\n${nameText}`;
-          const article: Article = { id, name, price, link, match, purchase };
+          const article: Article = {
+            id,
+            name,
+            price,
+            link,
+            purchaseLink,
+            match,
+            purchase,
+          };
           matches.push(article);
         }
       }
@@ -285,7 +295,7 @@ export default class ArticleTracker {
       // Adds the item into the cart in the default browser
       if (this.config.openOnBrowser) {
         difference.forEach((a) => {
-          open("https://www.pccomponentes.com/cart/addItem/" + a.id);
+          open(a.purchaseLink);
         });
       }
 
@@ -313,8 +323,9 @@ export default class ArticleTracker {
     this.checking = false;
   }
 
+  // TODO maybe make this one async, and then make the previous loop wait for this result
   checkPurchaseConditions(articles: Article[]): void {
-    articles.forEach((article) => {
+    articles.forEach(async (article) => {
       if (this.purchaseSame === false) {
         if (this.purchaseService.isAlreadyPurchased(article.link)) {
           Log.important(
@@ -324,80 +335,29 @@ export default class ArticleTracker {
           Log.success([article.match]);
           Log.breakline();
           return;
-        } else {
-          this.purchaseService.markAsPurchased(article.link);
         }
       }
+
       if (article.purchase) {
+        // this.buying = true;
         Log.success(`'${this.name} tracker' - Start purchase:`);
         Log.breakline();
         Log.success([article.match]);
         Log.breakline();
-        Log.critical("Purchase still not implemented.");
+        this.purchaseService.markAsPurchased(article.link);
+        const success = await this.purchaseService.purchase(
+          article,
+          this.browser,
+          this.debug
+        );
+
+        if (success) {
+          Log.success("Purchase completed!");
+        } else {
+          Log.error("Purchase failed!");
+        }
         Log.breakline();
       }
     });
-
-    // const purchaseConditions = this.config.purchaseConditions;
-    // if (!purchaseConditions) {
-    //   Log.error(
-    //     `Purchase is enabled, but the article tracker '${this.id}' has no purchase conditions. Check the config.json file.`
-    //   );
-    //   return;
-    // }
-    //
-    // // Check if the purchase conditions are met
-    // purchaseConditions.forEach((conditions: ArticleConfig) => {
-    //   if (
-    //     !this.buying &&
-    //     conditions.price >= article.price &&
-    //     conditions.model.every((v: string) =>
-    //       article.name.includes(v.toLowerCase())
-    //     )
-    //   ) {
-    //     if (!this.purchased.map((v) => v.link).includes(article.link)) {
-    //       this.buy(article, conditions);
-    //     }
-    //   }
-    // });
   }
-
-  //   buy(article: Article, conditions: ArticleConfig): void {
-  //     this.purchased.push(article);
-  //     Log.success(
-  //       `'${this.id} tracker' - Nice price, starting the purchase!` +
-  //         [article.match]
-  //     );
-  //     this.notifyService.notify(
-  //       `'${this.id} tracker' - Nice price, starting the purchase!`,
-  //       [article.match]
-  //     );
-
-  //     this.buying = true;
-  //     this.purchaseService
-  //       .run(article.link, conditions.price, 8000)
-  //       .then((result: boolean) => {
-  //         if (result) {
-  //           Log.success(`'${this.id} tracker' - Purchased! ` + [article.match]);
-  //           this.notifyService.notify(`'${this.id} tracker' - Purchased! `, [
-  //             article.match,
-  //           ]);
-  //           if (!this.config.purchaseMultiple) {
-  //             this.done = true;
-  //             this.notifyService.notify(
-  //               `'${this.id} tracker' - Purchase completed, tracker will be stopped.`
-  //             );
-  //           }
-  //         } else {
-  //           Log.error(
-  //             `'${this.id} tracker' - Purchase failed: ` + [article.match]
-  //           );
-  //           this.notifyService.notify(
-  //             `'${this.id} tracker' - Purchase failed: `,
-  //             [article.match]
-  //           );
-  //           this.buying = false;
-  //         }
-  //       });
-  //   }
 }

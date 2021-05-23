@@ -1,4 +1,8 @@
+import { Browser } from "puppeteer";
 import { Service } from "typedi";
+import { Article } from "../models";
+import Log from "../utils/log";
+import Utils from "../utils/utils";
 import NotifyService from "./notify.service";
 
 @Service()
@@ -15,7 +19,148 @@ export default class PurchaseService {
     this.purchased.push(link);
   }
 
-  async run(link: any, maxPrice: any, refreshRate: any): Promise<boolean> {
+  async purchase(
+    article: Article,
+    browser: Browser,
+    debug: boolean
+  ): Promise<boolean> {
+    const page = debug
+      ? await browser.newPage()
+      : await Utils.createHeadlessPage(browser);
+
+    await page.goto(article.purchaseLink, { waitUntil: "networkidle2" });
+    let error = await page.evaluate(
+      "document.getElementsByClassName('alert-danger')"
+    );
+
+    // Error found, return
+    if (error.length > 0) {
+      Log.error(error[0]?.getElementsByTagName("p")[0]?.textContent);
+      return false;
+    }
+    const warning = await page.evaluate(
+      "document.getElementsByClassName('alert-warning')"
+    );
+
+    // Go to the checkout
+    // New url detected:
+    // https://www.pccomponentes.com/cart/order?toNewCheckout=1
+    await page.goto(
+      "https://www.pccomponentes.com/cart/order?toNewCheckout=0",
+      {
+        waitUntil: "networkidle2",
+      }
+    );
+
+    // This may happen after trying to do the order, try again
+    // Warning example: El artículo XXX tiene una limitación de stock por cliente y sus unidades se han actualizado a 1
+    if (warning.length > 0) {
+      Log.error(warning[0]?.getElementsByTagName("p")[0]?.textContent);
+      await page.goto(
+        "https://www.pccomponentes.com/cart/order?toNewCheckout=0",
+        {
+          waitUntil: "networkidle2",
+        }
+      );
+    }
+
+    if (!page.url().includes("https://www.pccomponentes.com/cart/order")) {
+      Log.error("Order failed, the navigation to the order page was rejected.");
+      return false;
+    }
+
+    error = await page.evaluate(
+      "document.getElementsByClassName('alert-danger')"
+    );
+
+    // Error found, return
+    if (error.length > 0) {
+      Log.error(error[0]?.getElementsByTagName("p")[0]?.textContent);
+      return false;
+    }
+
+    // WE ARE IN THE CHECKOUT PAGE
+
+    await page.waitForTimeout(5000);
+
+    // Get all articles
+    const articlesToPurchase = await page.evaluate(
+      "document.getElementsByClassName('c-articles-to-send__list-items__item-text-info')"
+    );
+
+    Log.important(JSON.stringify(articlesToPurchase));
+
+    // articlesToPurchase?.forEach((element: any) => {
+    //   Log.success(element.childNodes[0].textContent.trim());
+    // });
+
+    Log.important("Attempting buy");
+
+    await page.waitForTimeout(2000);
+
+    // Click the transfer, if available
+
+    // const transfer = await page.evaluate(
+    //   "document.getElementsByClassName('tipopago5')[0].getElementsByClassName('c-indicator')[0]"
+    // );
+
+    // transfer.click();
+
+    await page.evaluate(() => {
+      const transfer = document
+        .getElementsByClassName("tipopago5")[0]
+        .getElementsByClassName("c-indicator")[0] as HTMLElement;
+      transfer.scrollIntoView({ behavior: "smooth" });
+      transfer.click();
+    });
+
+    await page.waitForTimeout(4000);
+    await page.evaluate(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    await page.waitForTimeout(2000);
+
+    await page.evaluate(() => {
+      const conditions = document.getElementById(
+        "pccom-conditions"
+      ) as HTMLElement;
+      conditions.scrollIntoView({ behavior: "smooth" });
+      conditions.click();
+    });
+
+    // await page.$eval("#pccom-conditions", (el) => el.click());
+    // await page.$eval("#GTM-carrito-finalizarCompra", (el) => el.click());
+    // await page.click('[id="pccom-conditions"]');
+    await page.waitForTimeout(2000);
+
+    await page.evaluate(() => {
+      const end = document.getElementById(
+        "GTM-carrito-finalizarCompra"
+      ) as HTMLElement;
+      end.scrollIntoView({ behavior: "smooth" });
+      end.click();
+    });
+
+    // https://www.pccomponentes.com/cart/order/finished/ok
+
+    // await page.click('[id="GTM-carrito-finalizarCompra"]');
+
+    // const conditions = await page.evaluate("#pccom-conditions");
+    // conditions.click();
+    // const purchase = await page.evaluate("#GTM-carrito-finalizarCompra");
+    // purchase.click();
+
+    // Reference error messages
+
+    // Only one, already in cart!
+    // "Solo es posible tener una unidad de un artículo de rastrillo"
+
+    // Not found
+    // Lo sentimos, no podemos encontrar lo que buscas
+
+    // No stock
+    // El artículo que has intentado añadir no tiene stock
+
     // (this.link = link),
     //   (this.maxPrice = maxPrice),
     //   (this.refreshRate = refreshRate);
@@ -26,7 +171,8 @@ export default class PurchaseService {
     //   console.error("ERROR NOT CAUGHT WHILE RUNNING BOT. MORE INFO BELOW");
     //   console.error(err);
     // }
-    return false;
+    // https:
+    return true;
   }
 
   // async runItem(driver: WebDriver) {

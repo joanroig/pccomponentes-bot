@@ -5,6 +5,7 @@ export interface Article {
   name: string;
   price: number;
   link: string;
+  purchaseLink: string;
   match: string;
   purchase: boolean;
 }
