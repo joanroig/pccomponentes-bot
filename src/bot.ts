@@ -67,7 +67,7 @@ export default class Bot {
       Log.config("Notifications disabled.", false);
     }
     if (this.botConfig.purchase) {
-      Log.config("Purchase enabled, but still not implemented.", false);
+      Log.config("Purchase enabled.", true);
     } else {
       Log.config("Purchase disabled.", false);
     }
@@ -138,16 +138,18 @@ export default class Bot {
       this.reconnectTrackers();
     });
 
-    Log.success(`Browser ready!`);
-
     if (this.botConfig.purchase) {
       try {
         return await this.loginService.login(this.browser, this.debug);
       } catch (error) {
+        this.browser.close();
         Log.error("Exception thrown while logging in: " + error);
         throw error;
       }
     }
+
+    Log.success(`Browser ready!`);
+
     return true;
   }
 
@@ -169,19 +171,23 @@ export default class Bot {
     this.browser.close(); // Do not await
     this.prepareBrowser().then(
       (success) => {
-        Log.breakline();
-        this.trackers.forEach((tracker, key) => {
-          if (tracker) {
-            Log.important("Reconnecting tracker: " + tracker.getName());
-            tracker.reconnect(this.browser);
-          } else {
-            Log.error(
-              "Tracker could not be reconnected because it was not found: Tracker id: " +
-                key
-            );
-          }
-        });
-        Log.breakline();
+        if (success) {
+          Log.breakline();
+          this.trackers.forEach((tracker, key) => {
+            if (tracker) {
+              Log.important("Reconnecting tracker: " + tracker.getName());
+              tracker.reconnect(this.browser);
+            } else {
+              Log.error(
+                "Tracker could not be reconnected because it was not found: Tracker id: " +
+                  key
+              );
+            }
+          });
+          Log.breakline();
+        } else {
+          this.shutdown(1);
+        }
       },
       (error) => {
         return;

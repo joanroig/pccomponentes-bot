@@ -30,8 +30,9 @@ export default class Validator {
                 properties: {
                   "data-name": { type: "array" },
                   "data-price": { type: "string" },
+                  "data-id": { type: "string" },
                 },
-                required: ["data-name", "data-price"],
+                required: ["data-name", "data-price", "data-id"],
               },
             },
           },
