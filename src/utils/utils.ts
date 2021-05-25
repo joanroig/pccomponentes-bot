@@ -28,18 +28,47 @@ export default class Utils {
     }
   }
 
-  static async createHeadlessPage(browser: Browser): Promise<Page> {
+  static async createPage(
+    browser: Browser,
+    debug: boolean,
+    intercept: boolean
+  ): Promise<Page> {
     const page = await browser.newPage();
 
-    const headlessUserAgent = await page.evaluate(() => navigator.userAgent);
-    const chromeUserAgent = headlessUserAgent.replace(
-      "HeadlessChrome",
-      "Chrome"
-    );
-    await page.setUserAgent(chromeUserAgent);
-    await page.setExtraHTTPHeaders({
-      "accept-language": "es-ES,es;q=0.8",
-    });
+    // Set headless
+    if (!debug) {
+      const headlessUserAgent = await page.evaluate(() => navigator.userAgent);
+      const chromeUserAgent = headlessUserAgent.replace(
+        "HeadlessChrome",
+        "Chrome"
+      );
+      await page.setUserAgent(chromeUserAgent);
+      await page.setExtraHTTPHeaders({
+        "accept-language": "es-ES,es;q=0.8",
+      });
+    }
+
+    // Disable images, fonts and css to be faster
+    if (intercept) {
+      await page.setRequestInterception(true);
+      page.removeAllListeners("request");
+      page.on("request", async (req) => {
+        // console.log(req.url());
+        // console.log(req.resourceType());
+        try {
+          if (
+            ["image", "stylesheet", "font"].includes(req.resourceType()) ||
+            req.url().endsWith(".ico")
+          ) {
+            await req.abort();
+          } else {
+            await req.continue();
+          }
+        } catch (e) {
+          console.log(e);
+        }
+      });
+    }
 
     return page;
   }

@@ -156,7 +156,7 @@ export default class Bot {
   refreshTrackers(): void {
     this.trackers.forEach((tracker, key) => {
       if (tracker) {
-        tracker.update(true);
+        tracker.update(false, true);
       } else {
         Log.error(
           "Tracker could not be refreshed because it was not found. Tracker id: " +

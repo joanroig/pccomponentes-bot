@@ -30,9 +30,7 @@ export default class LoginService {
       return false;
     }
 
-    const loginPage = debug
-      ? await browser.newPage()
-      : await Utils.createHeadlessPage(browser);
+    const loginPage = await Utils.createPage(browser, debug, true);
 
     Log.breakline();
     Log.info("Attempting login...");

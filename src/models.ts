@@ -37,6 +37,7 @@ export class CategoryConfig {
   openOnBrowser = false; // Open new matches in the default browser
   purchaseMultiple = false; // Allow multiple purchases in the category
   purchase = true; // Boolean to disable this category purchase (overrides the article "purchase" values)
+  autoSpeedup = false; // Boolean to enable automatic speedup when a change is detected in the categories (changes min and max updates to 1-2 seconds)
   maxPrice?: number; // Optional maximum price for all articles of the category
   exclude: string[] = []; // Optional array of strings that should NOT be present in the title of any article of the category
 }

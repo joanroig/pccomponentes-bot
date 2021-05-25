@@ -21,11 +21,19 @@ export default class ArticleTracker {
   private readonly purchase: boolean;
   private readonly purchaseSame: boolean;
 
-  private previous: Article[] = [];
+  private previousMatches: Article[] = [];
+  private previousAllAvailable: string[] = [];
+
   // private buying = false;
   private done = false;
   private checking = false;
   private notifyNextMatch = false;
+
+  private minUpdateSeconds;
+  private maxUpdateSeconds;
+
+  private speedupStartedTime: number | undefined = undefined;
+  private readonly speedupTimeout = 30 * 60 * 1000; // Half hour
 
   private browser: Browser;
   private page!: Page;
@@ -45,6 +53,8 @@ export default class ArticleTracker {
   ) {
     this.name = id;
     this.config = config;
+    this.minUpdateSeconds = this.config.minUpdateSeconds;
+    this.maxUpdateSeconds = this.config.maxUpdateSeconds;
     this.browser = browser;
     this.purchase = purchase;
     this.purchaseSame = purchaseSame;
@@ -57,7 +67,7 @@ export default class ArticleTracker {
     await this.newPage();
 
     // First iteration
-    this.update();
+    this.update(true);
 
     // Infinite loop
     this.loop();
@@ -77,9 +87,7 @@ export default class ArticleTracker {
   }
 
   async newPage(): Promise<void> {
-    this.page = this.debug
-      ? await this.browser.newPage()
-      : await Utils.createHeadlessPage(this.browser);
+    this.page = await Utils.createPage(this.browser, this.debug, true);
   }
 
   // Infinite loop with a pseudo-random timeout to fetch data imitating a human behaviour
@@ -89,13 +97,14 @@ export default class ArticleTracker {
       return;
     }
 
-    setTimeout(() => {
-      this.update();
+    setTimeout(async () => {
+      // Wait for the update to be done
+      await this.update();
       this.loop();
-    }, randomNumberRange(this.config.minUpdateSeconds * 1000, this.config.maxUpdateSeconds * 1000));
+    }, randomNumberRange(this.minUpdateSeconds * 1000, this.maxUpdateSeconds * 1000));
   }
 
-  async update(notify?: boolean): Promise<void> {
+  async update(first = false, notify?: boolean): Promise<void> {
     if (notify) {
       this.notifyNextMatch = true;
     }
@@ -151,10 +160,13 @@ export default class ArticleTracker {
       return;
     }
 
-    const matches = this.processData(json);
+    const data = this.processData(json);
 
-    // Notify the next matches if requested, ensures the sending of the notification in case the tracker is still checking data
+    const matches = data.matches;
+    const allAvailable = data.allAvailable;
+
     if (this.notifyNextMatch) {
+      // Notify the next matches if requested, ensures the sending of the notification in case the tracker is still checking data
       this.notifyNextMatch = false;
       this.notifyService.notify(
         `'${this.name} tracker' - All articles available:`,
@@ -162,6 +174,9 @@ export default class ArticleTracker {
       );
     }
 
+    if (this.config.autoSpeedup) {
+      this.checkAllStock(allAvailable, first);
+    }
     this.checkIfNew(matches);
   }
 
@@ -202,13 +217,15 @@ export default class ArticleTracker {
     }
   }
 
-  processData(json: any): Article[] {
+  processData(json: any): { matches: Article[]; allAvailable: string[] } {
     // List of items that match the requisites (each item is a string with price, name and URL)
     const matches: Article[] = [];
+    // List of all items in stock, used to check changes (we can react on it)
+    const allAvailable: string[] = [];
 
     if (!json || !json.child) {
       Log.error("Missing data, skipping...");
-      return [];
+      return { matches, allAvailable };
     }
 
     json.child.forEach((element: any) => {
@@ -220,11 +237,6 @@ export default class ArticleTracker {
         );
         let purchase = true;
 
-        // Check if the price is below the maximum of this category (if defined)
-        if (this.config.maxPrice && price >= this.config.maxPrice) {
-          return;
-        }
-
         // Check if out of stock
         if (
           element.child.find((c: any) =>
@@ -234,6 +246,16 @@ export default class ArticleTracker {
           return;
         }
 
+        // Build link and and save to the all available list
+        const link =
+          "https://www.pccomponentes.com" +
+          element.child.find((a: any) => a.tag === "a").attr.href;
+        allAvailable.push(link);
+
+        // Check if the price is below the maximum of this category (if defined)
+        if (this.config.maxPrice && price >= this.config.maxPrice) {
+          return;
+        }
         if (
           this.config.articles.some((article: ArticleConfig) => {
             // Check if the price is below the maximum of this article (if defined)
@@ -261,9 +283,6 @@ export default class ArticleTracker {
           })
         ) {
           //  Build link, name and price of the article in a single string
-          const link =
-            "https://www.pccomponentes.com" +
-            element.child.find((a: any) => a.tag === "a").attr.href;
           const purchaseLink =
             "https://www.pccomponentes.com/cart/addItem/" + id;
           const nameText = `[${name.join([" "])}](${link})`;
@@ -282,13 +301,52 @@ export default class ArticleTracker {
         }
       }
     });
-    return matches;
+    return { matches, allAvailable };
+  }
+
+  async checkAllStock(allAvailable: string[], first: boolean): Promise<void> {
+    // First iteration
+    if (first) {
+      this.previousAllAvailable = allAvailable;
+      return;
+    }
+
+    // Check for any stock changes - use difference to only get the new ones
+    const difference = allAvailable.filter(
+      (a) => !this.previousAllAvailable.find((b) => a === b)
+    );
+    if (difference.length > 0) {
+      Log.important(
+        `'${this.name} tracker' - Stock changes detected, speedup started. Articles found:\n` +
+          difference.map((v) => v).join("\n"),
+        true
+      );
+      this.minUpdateSeconds = 1;
+      this.maxUpdateSeconds = 2;
+      this.speedupStartedTime = new Date().getTime();
+    }
+    // Check if the timeout is done to set the normal update time again
+    if (
+      this.speedupStartedTime !== undefined &&
+      new Date().getTime() - this.speedupStartedTime > this.speedupTimeout
+    ) {
+      Log.important(
+        `'${this.name} tracker' - No stock changes for a while, speedup stopped.`,
+        true
+      );
+      this.speedupStartedTime = undefined;
+      this.minUpdateSeconds = this.config.minUpdateSeconds;
+      this.maxUpdateSeconds = this.config.maxUpdateSeconds;
+    }
+
+    // Update previous
+    this.previousAllAvailable = allAvailable;
   }
 
   checkIfNew(matches: Article[]): void {
     // Check if there is any new article - use difference to only get the new ones
     const difference = matches.filter(
-      (a) => !this.previous.find((b) => a.link === b.link)
+      (a) => !this.previousMatches.find((b) => a.link === b.link)
     );
 
     if (difference.length > 0) {
@@ -318,7 +376,7 @@ export default class ArticleTracker {
     }
 
     // Update previous
-    this.previous = matches;
+    this.previousMatches = matches;
 
     this.checking = false;
   }
@@ -344,6 +402,9 @@ export default class ArticleTracker {
         Log.breakline();
         Log.success([article.match]);
         Log.breakline();
+        this.notifyService.notify(`'${this.name} tracker' - Start purchase:`, [
+          article.match,
+        ]);
         this.purchaseService.markAsPurchased(article.link);
         const success = await this.purchaseService.purchase(
           article,
@@ -353,8 +414,16 @@ export default class ArticleTracker {
 
         if (success) {
           Log.success("Purchase completed!");
+          this.notifyService.notify(
+            `'${this.name} tracker' - Purchase completed!: `,
+            [article.match]
+          );
         } else {
           Log.error("Purchase failed!");
+          this.notifyService.notify(
+            `'${this.name} tracker' - Purchase failed!: `,
+            [article.match]
+          );
         }
         Log.breakline();
       }
