@@ -24,26 +24,26 @@ export default class PurchaseService {
     browser: Browser,
     debug: boolean
   ): Promise<boolean> {
-    const page = debug
-      ? await browser.newPage()
-      : await Utils.createHeadlessPage(browser);
+    const page = await Utils.createPage(browser, debug, false);
 
     await page.goto(article.purchaseLink, { waitUntil: "networkidle2" });
-    let error = await page.evaluate(
-      "document.getElementsByClassName('alert-danger')"
-    );
+
+    let error = await page.evaluate(() => {
+      return document.querySelector(".alert-danger > p")?.innerHTML;
+    });
 
     // Error found, return
-    if (error.length > 0) {
-      Log.error(error[0]?.getElementsByTagName("p")[0]?.textContent);
+    if (error) {
+      Log.error(error);
       return false;
     }
-    const warning = await page.evaluate(
-      "document.getElementsByClassName('alert-warning')"
-    );
+
+    const warning = await page.evaluate(() => {
+      return document.querySelector(".alert-warning > p")?.innerHTML;
+    });
 
     // Go to the checkout
-    // New url detected:
+    // New url:
     // https://www.pccomponentes.com/cart/order?toNewCheckout=1
     await page.goto(
       "https://www.pccomponentes.com/cart/order?toNewCheckout=0",
@@ -54,8 +54,8 @@ export default class PurchaseService {
 
     // This may happen after trying to do the order, try again
     // Warning example: El artículo XXX tiene una limitación de stock por cliente y sus unidades se han actualizado a 1
-    if (warning.length > 0) {
-      Log.error(warning[0]?.getElementsByTagName("p")[0]?.textContent);
+    if (warning) {
+      Log.error(warning);
       await page.goto(
         "https://www.pccomponentes.com/cart/order?toNewCheckout=0",
         {
@@ -69,17 +69,17 @@ export default class PurchaseService {
       return false;
     }
 
-    error = await page.evaluate(
-      "document.getElementsByClassName('alert-danger')"
-    );
+    // WE ARE IN THE CHECKOUT PAGE
 
-    // Error found, return
-    if (error.length > 0) {
-      Log.error(error[0]?.getElementsByTagName("p")[0]?.textContent);
+    error = await page.evaluate(() => {
+      return document.querySelector(".alert-danger > p")?.innerHTML;
+    });
+
+    // Error found in the checkout page, return
+    if (error) {
+      Log.error(error);
       return false;
     }
-
-    // WE ARE IN THE CHECKOUT PAGE
 
     await page.waitForTimeout(5000);
 
