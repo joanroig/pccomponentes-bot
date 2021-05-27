@@ -84,6 +84,22 @@ If you enable the purchase mode, add those strings in the .env file with your ac
 
 To run it on a Raspberry (maybe chmod + x is needed), you can also execute: `run_raspberry.sh`
 
+## Warnings about the purchase
+
+### Cart management
+
+If purchase mode is activated, the bot will add the article into the cart and try to order everything in it. Please keep it empty!
+
+### Payment methods
+
+The transfer option disappears from time to time. If purchase mode is activated, you will need to have a vinculated card.
+
+To vinculate one, follow those steps:
+
+- Add whatever in the cart and start the purchase process.
+- Add your credit / debit card, then confirm the purchase. This vinculates the card.
+- If you don't need the article you can cancel the purchase [here](https://www.pccomponentes.com/usuarios/panel/mis-pedidos-y-facturas). The card will remain in your account for future usage.
+
 ## Known issues
 
 ### Login fails, but credentials are right
