@@ -52,6 +52,11 @@ export default class Bot {
       this.shutdown(code);
     });
 
+    if (this.debug) {
+      Log.config("Debug enabled.", true);
+      Log.breakline();
+    }
+
     if (this.botConfig.notify) {
       Log.config("Notifications enabled.", true);
       // Setup the telegram bot
