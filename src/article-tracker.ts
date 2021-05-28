@@ -66,8 +66,13 @@ export default class ArticleTracker {
     // Create the page that will be used for this tracker
     await this.newPage();
 
+    // Start the speedup
+    if (this.config.autoSpeedup) {
+      this.startSpeedup();
+    }
+
     // First iteration
-    this.update(true);
+    await this.update(true);
 
     // Infinite loop
     this.loop();
@@ -145,6 +150,14 @@ export default class ArticleTracker {
       return;
     }
 
+    if (pages === "") {
+      Log.error(
+        `'${this.name} tracker' - Error while checking page data, found an empty page.`
+      );
+      this.checking = false;
+      return;
+    }
+
     // Convert the cleaned HTML output to JSON objects
     const json = html2json(pages);
 
@@ -183,10 +196,13 @@ export default class ArticleTracker {
   async checkPages(pageCount: number, result: string): Promise<string> {
     await this.page.goto(
       this.config.url + `&page=${pageCount}&order=${this.config.order}`,
-      {
-        waitUntil: "networkidle2",
-      }
+      { waitUntil: "domcontentloaded" } // Only wait till the dom is loaded, it's faster
     );
+
+    // Hide the rating star and image elements without waiting (it does not affect the performance, just to have a cleaner list while debugging)
+    this.page.addStyleTag({
+      content: ".c-star-rating.cy-product-rating,img{display:none}",
+    });
 
     const bodyHTML = await this.page.evaluate(() => document.body.innerHTML);
 
@@ -316,31 +332,50 @@ export default class ArticleTracker {
       (a) => !this.previousAllAvailable.find((b) => a === b)
     );
     if (difference.length > 0) {
-      Log.important(
-        `'${this.name} tracker' - Stock changes detected, speedup started. Articles found:\n` +
-          difference.map((v) => v).join("\n"),
-        true
-      );
-      this.minUpdateSeconds = 1;
-      this.maxUpdateSeconds = 2;
-      this.speedupStartedTime = new Date().getTime();
+      this.startSpeedup(difference);
     }
     // Check if the timeout is done to set the normal update time again
     if (
       this.speedupStartedTime !== undefined &&
       new Date().getTime() - this.speedupStartedTime > this.speedupTimeout
     ) {
-      Log.important(
-        `'${this.name} tracker' - No stock changes for a while, speedup stopped.`,
-        true
-      );
-      this.speedupStartedTime = undefined;
-      this.minUpdateSeconds = this.config.minUpdateSeconds;
-      this.maxUpdateSeconds = this.config.maxUpdateSeconds;
+      this.stopSpeedup();
     }
 
     // Update previous
     this.previousAllAvailable = allAvailable;
+  }
+
+  startSpeedup(difference?: string[]): void {
+    if (difference) {
+      Log.breakline();
+      Log.important(
+        `'${this.name} tracker' - Stock changes detected. Articles found:\n\n` +
+          difference.map((v) => v).join("\n"),
+        true
+      );
+      Log.breakline();
+    }
+    const endDate = new Date(new Date().getTime() + this.speedupTimeout);
+    const endTime = Utils.getHoursMinutesFromDate(endDate);
+    Log.breakline();
+    Log.important(`'${this.name} tracker' - Speed up until ${endTime} h`, true);
+    Log.breakline();
+    this.minUpdateSeconds = 0.1;
+    this.maxUpdateSeconds = 0.5;
+    this.speedupStartedTime = new Date().getTime();
+  }
+
+  stopSpeedup(): void {
+    Log.breakline();
+    Log.important(
+      `'${this.name} tracker' - No stock changes for a while, speed up stopped.`,
+      true
+    );
+    Log.breakline();
+    this.speedupStartedTime = undefined;
+    this.minUpdateSeconds = this.config.minUpdateSeconds;
+    this.maxUpdateSeconds = this.config.maxUpdateSeconds;
   }
 
   checkIfNew(matches: Article[]): void {
@@ -387,7 +422,8 @@ export default class ArticleTracker {
       if (this.purchaseSame === false) {
         if (this.purchaseService.isAlreadyPurchased(article.link)) {
           Log.important(
-            `'${this.name} tracker' - Already purchased, skipping:`
+            `'${this.name} tracker' - Already purchased, skipping:`,
+            true
           );
           Log.breakline();
           Log.success([article.match]);
@@ -398,7 +434,7 @@ export default class ArticleTracker {
 
       if (article.purchase) {
         // this.buying = true;
-        Log.success(`'${this.name} tracker' - Start purchase:`);
+        Log.success(`'${this.name} tracker' - Start purchase:`, true);
         Log.breakline();
         Log.success([article.match]);
         Log.breakline();
@@ -406,26 +442,24 @@ export default class ArticleTracker {
           article.match,
         ]);
         this.purchaseService.markAsPurchased(article.link);
-        const success = await this.purchaseService.purchase(
-          article,
-          this.browser,
-          this.debug
-        );
-
-        if (success) {
-          Log.success("Purchase completed!");
-          this.notifyService.notify(
-            `'${this.name} tracker' - Purchase completed!: `,
-            [article.match]
-          );
-        } else {
-          Log.error("Purchase failed!");
-          this.notifyService.notify(
-            `'${this.name} tracker' - Purchase failed!: `,
-            [article.match]
-          );
-        }
-        Log.breakline();
+        this.purchaseService
+          .purchase(article, this.browser, this.debug)
+          .then((success) => {
+            if (success) {
+              Log.success("Purchase completed!", true);
+              this.notifyService.notify(
+                `'${this.name} tracker' - Purchase completed!: `,
+                [article.match]
+              );
+            } else {
+              Log.error("Purchase failed!", true);
+              this.notifyService.notify(
+                `'${this.name} tracker' - Purchase failed!: `,
+                [article.match]
+              );
+            }
+            Log.breakline();
+          });
       }
     });
   }
