@@ -25,10 +25,39 @@ export default class PurchaseService {
     browser: Browser,
     debug: boolean
   ): Promise<boolean> {
-    const page = await Utils.createPage(browser, debug, false);
+    Log.important("Purchase process started", true);
+    Log.breakline();
 
-    Log.important("Purchasing: " + article.purchaseLink);
-    await page.goto(article.purchaseLink, { waitUntil: "networkidle2" });
+    // Create a page with intercept enabled for fast scrapping
+    const page = await Utils.createPage(browser, debug, true);
+    let purchaseUrl = article.purchaseLink;
+
+    // Check if the link contains the article id by checking URL location (should be in 'rastrillo')
+    if (!purchaseUrl.includes("rastrillo/")) {
+      // Invalid purchase link, scrap the ID from the article page asap (navigate without await, then wait until the selector is rendered)
+      page.goto(article.link);
+      await page.waitForSelector("#contenedor-principal");
+
+      const articleId = await page.evaluate(() => {
+        return document
+          .querySelector("#contenedor-principal")
+          ?.getAttribute("data-id");
+      });
+
+      if (!articleId) {
+        Log.error("Unable to get the article id");
+        return false;
+      }
+
+      purchaseUrl = "https://www.pccomponentes.com/cart/addItem/" + articleId;
+    }
+
+    Log.important("Adding to cart. Using direct url:\n" + purchaseUrl, true);
+    Log.breakline();
+
+    await page.goto(purchaseUrl, {
+      waitUntil: "domcontentloaded",
+    });
 
     await page.waitForTimeout(200);
 
@@ -40,46 +69,52 @@ export default class PurchaseService {
 
     // Error found, return
     if (cartError) {
-      Log.error(cartError);
+      Log.error(cartError, true);
       return false;
     }
 
-    // Go to the checkout
-    // New url:
-    // https://www.pccomponentes.com/cart/order?toNewCheckout=1
+    // Disable intercept for purchasing (load everything in it)
+    page.removeAllListeners("request");
+    await page.setRequestInterception(false);
+
+    // Go to the checkout (url may change in the future: https://www.pccomponentes.com/cart/order?toNewCheckout=1)
     await page.goto(
       "https://www.pccomponentes.com/cart/order?toNewCheckout=0",
       {
-        waitUntil: "networkidle2",
+        waitUntil: "domcontentloaded",
       }
     );
 
-    await page.waitForTimeout(200);
+    // await page.waitForTimeout(200);
 
     const purchaseWarning = await page.evaluate(() => {
       return document
-        .querySelector("#alertBox")
-        ?.querySelector(".alert-warning.alert-dismissible > p")?.innerHTML;
+        .querySelector(".alertBox")
+        ?.querySelector(".alert-warning > p")?.innerHTML;
     });
 
     // This may happen after trying to do the order, try again
     // Warning example: El artículo XXX tiene una limitación de stock por cliente y sus unidades se han actualizado a 1
     if (purchaseWarning) {
-      Log.error(purchaseWarning);
+      Log.important("Warning found, trying again:\n" + purchaseWarning, true);
       await page.goto(
         "https://www.pccomponentes.com/cart/order?toNewCheckout=0",
         {
-          waitUntil: "networkidle2",
+          waitUntil: "domcontentloaded",
         }
       );
     }
 
     if (!page.url().includes("https://www.pccomponentes.com/cart/order")) {
-      Log.error("Order failed, the navigation to the order page was rejected.");
+      Log.error(
+        "Order failed, the navigation to the order page was rejected.",
+        true
+      );
       return false;
     }
 
     // WE ARE IN THE CHECKOUT PAGE
+
     await page.waitForTimeout(2000);
 
     const purchaseError = await page.evaluate(() => {
@@ -90,35 +125,16 @@ export default class PurchaseService {
 
     // Error found in the checkout page, return
     if (purchaseError) {
-      Log.error(purchaseError);
+      Log.error(purchaseError, true);
       return false;
     }
 
-    await page.waitForTimeout(5000);
+    Log.important("Reached the payment page, trying to pay.", true);
+    Log.breakline();
 
-    // // Get all articles
-    // const articlesToPurchase = await page.evaluate(
-    //   "document.getElementsByClassName('c-articles-to-send__list-items__item-text-info')"
-    // );
+    await page.waitForTimeout(1000);
 
-    // Log.important(JSON.stringify(articlesToPurchase));
-
-    // articlesToPurchase?.forEach((element: any) => {
-    //   Log.success(element.childNodes[0].textContent.trim());
-    // });
-
-    Log.important("Attempting buy");
-
-    await page.waitForTimeout(2000);
-
-    // Click the transfer, if available
-
-    // const transfer = await page.evaluate(
-    //   "document.getElementsByClassName('tipopago5')[0].getElementsByClassName('c-indicator')[0]"
-    // );
-
-    // transfer.click();
-
+    // Change payment to transfer mode
     if (this.tryTransfer) {
       const transferClicked = await page.evaluate(() => {
         const transfer = document
@@ -134,15 +150,17 @@ export default class PurchaseService {
       });
 
       if (!transferClicked) {
-        Log.error("Unable to click the transfer payment type button!");
+        Log.error("Unable to click the transfer payment type button!", true);
         return false;
       }
+      await page.waitForTimeout(2000);
     }
-    await page.waitForTimeout(4000);
+
     await page.evaluate(() => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
-    await page.waitForTimeout(2000);
+
+    await page.waitForTimeout(1000);
 
     await page.evaluate(() => {
       const conditions = document.getElementById(
@@ -152,9 +170,6 @@ export default class PurchaseService {
       conditions.click();
     });
 
-    // await page.$eval("#pccom-conditions", (el) => el.click());
-    // await page.$eval("#GTM-carrito-finalizarCompra", (el) => el.click());
-    // await page.click('[id="pccom-conditions"]');
     await page.waitForTimeout(2000);
 
     await page.evaluate(() => {
@@ -165,23 +180,30 @@ export default class PurchaseService {
       end.click();
     });
 
-    await page.waitForTimeout(6000);
+    Log.important("All done, crossing fingers...", true);
+    Log.breakline();
+
+    await page.waitForTimeout(10000);
 
     if (
       !page
         .url()
         .includes("https://www.pccomponentes.com/cart/order/finished/ok")
     ) {
-      Log.error(
-        "Order payment failed, the browser did not navigate to the confirmation page.\nMaybe you need to confirm the purchase within your bank app.\nReceived URL: \n" +
-          page.url()
-      );
-      Log.important(
-        "Maybe the order was created, check if you can pay manually here:\nhttps://www.pccomponentes.com/usuarios/panel/mis-pedidos-y-facturas"
-      );
+      const errorText =
+        "⚠️ Order payment failed, the browser did not navigate to the payment confirmation page. Check the options below.\n";
+      const solutions =
+        `- Maybe you need to confirm the purchase within your bank app. Last URL found:\n${page.url()}\n\n` +
+        "- Maybe the order was created, check if you can pay manually here:\nhttps://www.pccomponentes.com/usuarios/panel/mis-pedidos-y-facturas";
+      Log.breakline();
+      Log.error(errorText, true);
+      Log.important(solutions);
+      Log.breakline();
+
+      this.notifyService.notify(errorText + "\n" + solutions);
+
       return false;
     }
-
     return true;
   }
 }
