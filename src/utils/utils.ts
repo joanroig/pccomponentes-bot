@@ -57,7 +57,7 @@ export default class Utils {
       });
     }
 
-    // Disable images, fonts and css to be faster (not working for article or payment pages)
+    // Block some requests to be faster (not working for article or payment pages)
     if (intercept) {
       await page.setRequestInterception(true);
       page.removeAllListeners("request");
@@ -81,6 +81,7 @@ export default class Utils {
         }
       });
     }
+
     return page;
   }
 }
