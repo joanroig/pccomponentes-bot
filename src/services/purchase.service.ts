@@ -115,6 +115,9 @@ export default class PurchaseService {
 
     // WE ARE IN THE CHECKOUT PAGE
 
+    // Do a quick cart check
+    this.quickCartCheck(browser, debug);
+
     await page.waitForTimeout(2000);
 
     const purchaseError = await page.evaluate(() => {
@@ -205,5 +208,44 @@ export default class PurchaseService {
       return false;
     }
     return true;
+  }
+
+  private async quickCartCheck(
+    browser: Browser,
+    debug: boolean
+  ): Promise<void> {
+    const page = await Utils.createPage(browser, debug, true);
+    page.goto("https://www.pccomponentes.com/cart/rawcart");
+    await page.waitForSelector("body");
+    const cartData = await page.evaluate(() => {
+      return document.querySelector("body")?.innerText;
+    });
+    if (cartData) {
+      try {
+        const json = JSON.parse(cartData);
+        const totalQuantity = json.totalQty;
+        const totalPay = json.totalToPay;
+        const articles = json.articles;
+        let message = `💰 Purchasing ${totalQuantity} articles for ${totalPay} EUR:\n\n`;
+        articles.forEach((article: any) => {
+          const name = article.name;
+          const quantity = article.qty;
+          const unitPrice = article.unitPrice;
+          const totalPrice = article.totalPrice;
+          message += `${totalPrice} EUR - ${quantity} units of ${name} at ${unitPrice} EUR\n\n`;
+        });
+        Log.breakline();
+        Log.important(message);
+        Log.breakline();
+        message += `\nUSE THIS COMMAND TO CANCEL: /headshot`;
+        this.notifyService.notify(message);
+      } catch (error) {
+        Log.error(
+          "Unable to parse JSON data to print the cart info: " + error,
+          true
+        );
+      }
+    }
+    page.close();
   }
 }
