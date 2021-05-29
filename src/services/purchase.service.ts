@@ -231,8 +231,8 @@ export default class PurchaseService {
           const name = article.name;
           const quantity = article.qty;
           const unitPrice = article.unitPrice;
-          const totalPrice = article.totalPrice;
-          message += `${totalPrice} EUR - ${quantity} units of ${name} at ${unitPrice} EUR\n\n`;
+          // const totalPrice = article.totalPrice;
+          message += `${quantity} x ${unitPrice} EUR - ${name}\n\n`;
         });
         Log.breakline();
         Log.important(message);
