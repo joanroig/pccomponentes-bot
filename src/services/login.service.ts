@@ -43,7 +43,22 @@ export default class LoginService {
 
     const cursor = createCursor(loginPage, await getRandomPagePoint(loginPage));
 
-    await cursor.click("input[data-cy='email']", {
+    // Select the email / username field and type in, it may change in the future
+    const email = await loginPage.evaluate(() => {
+      return document.getElementById("email");
+    });
+    const username = await loginPage.evaluate(() => {
+      return document.getElementById("username");
+    });
+
+    let firstInput = "";
+    if (email !== null) {
+      firstInput = "input#email";
+    } else if (username !== null) {
+      firstInput = "input#username";
+    }
+
+    await cursor.click(firstInput, {
       waitForClick: randomNumberRange(1000, 3000),
       moveDelay: randomNumberRange(1000, 3000),
       paddingPercentage: 20,
@@ -51,20 +66,15 @@ export default class LoginService {
     });
     await Utils.humanType(loginPage, this.email.trim());
 
-    await cursor.click("input[data-cy='password']", {
-      waitForClick: randomNumberRange(1000, 3000),
-      moveDelay: randomNumberRange(1000, 3000),
-      paddingPercentage: 20,
-      waitForSelector: 1000,
-    });
+    // Press tab and type password
+    await loginPage.waitForTimeout(randomNumberRange(500, 2000));
+    await loginPage.keyboard.press("Tab");
+    await loginPage.waitForTimeout(randomNumberRange(500, 2000));
     await Utils.humanType(loginPage, this.password.trim());
 
-    await cursor.click("button[data-cy='log-in']", {
-      waitForClick: randomNumberRange(1000, 3000),
-      moveDelay: randomNumberRange(1000, 3000),
-      paddingPercentage: 20,
-      waitForSelector: 1000,
-    });
+    // Press enter
+    await loginPage.waitForTimeout(randomNumberRange(500, 2000));
+    await Utils.humanType(loginPage, String.fromCharCode(13));
 
     await loginPage.waitForTimeout(10000);
 
