@@ -1,4 +1,5 @@
 import { Browser } from "puppeteer";
+import { BehaviorSubject } from "rxjs";
 import { Service } from "typedi";
 import { Article } from "../models";
 import Log from "../utils/log";
@@ -79,9 +80,9 @@ export default class PurchaseService {
 
     // Go to the checkout (url may change in the future: https://www.pccomponentes.com/cart/order?toNewCheckout=1)
     await page.goto(
-      "https://www.pccomponentes.com/cart/order?toNewCheckout=0",
+      "https://www.pccomponentes.com/cart/order?toNewCheckout=0&redirect=0",
       {
-        waitUntil: "domcontentloaded",
+        waitUntil: "networkidle2",
       }
     );
 
@@ -100,7 +101,7 @@ export default class PurchaseService {
       await page.goto(
         "https://www.pccomponentes.com/cart/order?toNewCheckout=0",
         {
-          waitUntil: "domcontentloaded",
+          waitUntil: "networkidle2",
         }
       );
     }
@@ -116,7 +117,8 @@ export default class PurchaseService {
     // WE ARE IN THE CHECKOUT PAGE
 
     // Do a quick cart check
-    this.quickCartCheck(browser, debug);
+    const forceStop = new BehaviorSubject<boolean>(false);
+    this.quickCartCheck(browser, debug, forceStop);
 
     await page.waitForTimeout(2000);
 
@@ -173,7 +175,19 @@ export default class PurchaseService {
       conditions.click();
     });
 
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(5000);
+
+    // Check if the purchase should be stopped
+    if (forceStop.value === true) {
+      Log.breakline();
+      Log.critical("Purchase was manually stopped!", true);
+      this.notifyService.notify("Purchase was manually stopped!");
+      Log.breakline();
+      return false;
+    }
+
+    // The purchase cannot be stopped from here
+    forceStop.unsubscribe();
 
     await page.evaluate(() => {
       const end = document.getElementById(
@@ -207,12 +221,15 @@ export default class PurchaseService {
 
       return false;
     }
+
+    page.close();
     return true;
   }
 
   private async quickCartCheck(
     browser: Browser,
-    debug: boolean
+    debug: boolean,
+    forceStop: BehaviorSubject<boolean>
   ): Promise<void> {
     const page = await Utils.createPage(browser, debug, true);
     page.goto("https://www.pccomponentes.com/cart/rawcart");
@@ -226,19 +243,22 @@ export default class PurchaseService {
         const totalQuantity = json.totalQty;
         const totalPay = json.totalToPay;
         const articles = json.articles;
-        let message = `💰 Purchasing ${totalQuantity} articles for ${totalPay} EUR:\n\n`;
+        let message = `💰 Purchasing ${totalQuantity} articles for ${totalPay} EUR:`;
         articles.forEach((article: any) => {
           const name = article.name;
           const quantity = article.qty;
           const unitPrice = article.unitPrice;
           // const totalPrice = article.totalPrice;
-          message += `${quantity} x ${unitPrice} EUR - ${name}\n\n`;
+          message += `\n\n${quantity} x ${unitPrice} EUR - ${name}`;
         });
         Log.breakline();
         Log.important(message);
         Log.breakline();
-        message += `\nUSE THIS COMMAND TO CANCEL: /headshot`;
+
+        const cancelId = "/STOP_NOW_" + Math.random().toString(36).substring(7);
+        message += `\n\nPRESS THIS TO CANCEL:\n\n${cancelId}`;
         this.notifyService.notify(message);
+        this.notifyService.hearStopRequest(forceStop, cancelId);
       } catch (error) {
         Log.error(
           "Unable to parse JSON data to print the cart info: " + error,
