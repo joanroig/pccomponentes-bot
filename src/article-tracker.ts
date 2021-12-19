@@ -246,7 +246,17 @@ export default class ArticleTracker {
 
     json.child.forEach((element: any) => {
       if (element.attr && element.tag === "article") {
-        const id = element.attr["data-id"];
+        const href = element.child.find((a: any) => a.tag === "a").attr
+          .href as string;
+
+        let id: number;
+
+        if (href.includes("/rastrillo/")) {
+          id = Number(href.replace("/rastrillo/", ""));
+        } else {
+          id = element.attr["data-id"];
+        }
+
         const price = element.attr["data-price"];
         const name = element.attr["data-name"].map((v: string) =>
           v.toLowerCase()
@@ -263,9 +273,7 @@ export default class ArticleTracker {
         }
 
         // Build link and and save to the all available list
-        const link =
-          "https://www.pccomponentes.com" +
-          element.child.find((a: any) => a.tag === "a").attr.href;
+        const link = "https://www.pccomponentes.com" + href;
         allAvailable.push(link);
 
         // Check if the price is below the maximum of this category (if defined)
@@ -397,9 +405,16 @@ export default class ArticleTracker {
       Log.important("\n" + difference.map((v) => v.match).join("\n\n"));
       Log.breakline();
 
+      // this.notifyService.notify(
+      //   `'${this.name} tracker' - New articles found:`,
+      //   difference.map((v) => v.match + "\n\n" + v.purchaseLink)
+      // );
+
       this.notifyService.notify(
         `'${this.name} tracker' - New articles found:`,
-        difference.map((v) => v.match)
+        difference.map((v) =>
+          v.match + "\n\n" + v.link.includes("rastrillo/") ? v.purchaseLink : ""
+        )
       );
 
       // Try to purchase the new matches if the bot and the category have the purchase enabled
