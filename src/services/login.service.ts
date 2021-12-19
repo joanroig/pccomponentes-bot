@@ -39,6 +39,32 @@ export default class LoginService {
       waitUntil: "networkidle2",
     });
 
+    // const success = !loginPage.url().includes("pccomponentes.com/login");
+    // while (!success) {
+    //   await loginPage.waitForTimeout(randomNumberRange(1000, 3000));
+    //   if (success) {
+    //     Log.success("Successfully logged in!");
+    //     this.loginAttempts = 0;
+    //     await loginPage.close();
+    //     return true;
+    //   } else {
+    //     this.loginAttempts++;
+    //     if (this.loginAttempts >= this.maxLoginAttempts) {
+    //       Log.critical("Login failed too much times. Check your credentials.");
+    //       this.notifyService.notify(
+    //         `Login attempt failed, check the credentials. Bot stopped.`
+    //       );
+    //       return false;
+    //     } else {
+    //       Log.error("Login attempt failed. Trying again in 5 seconds...");
+    //       await loginPage.waitForTimeout(5000);
+    //       // await loginPage.close();
+    //       // return this.login(browser, debug);
+    //     }
+    //   }
+    // }
+    // return false;
+
     await loginPage.waitForTimeout(randomNumberRange(1000, 3000));
 
     const cursor = createCursor(loginPage, await getRandomPagePoint(loginPage));

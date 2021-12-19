@@ -1,7 +1,8 @@
+import { transformAndValidate } from "class-transformer-validator";
 import { Browser } from "puppeteer";
 import { BehaviorSubject } from "rxjs";
 import { Service } from "typedi";
-import { Article } from "../models";
+import { Article, CartData } from "../models";
 import Log from "../utils/log";
 import Utils from "../utils/utils";
 import NotifyService from "./notify.service";
@@ -79,12 +80,9 @@ export default class PurchaseService {
     await page.setRequestInterception(false);
 
     // Go to the checkout (url may change in the future: https://www.pccomponentes.com/cart/order?toNewCheckout=1)
-    await page.goto(
-      "https://www.pccomponentes.com/cart/order?toNewCheckout=0&redirect=0",
-      {
-        waitUntil: "networkidle2",
-      }
-    );
+    await page.goto("https://www.pccomponentes.com/cart/summary", {
+      waitUntil: "networkidle2",
+    });
 
     // await page.waitForTimeout(200);
 
@@ -98,15 +96,12 @@ export default class PurchaseService {
     // Warning example: El artículo XXX tiene una limitación de stock por cliente y sus unidades se han actualizado a 1
     if (purchaseWarning) {
       Log.important("Warning found, trying again:\n" + purchaseWarning, true);
-      await page.goto(
-        "https://www.pccomponentes.com/cart/order?toNewCheckout=0",
-        {
-          waitUntil: "networkidle2",
-        }
-      );
+      await page.goto("https://www.pccomponentes.com/cart/summary", {
+        waitUntil: "networkidle2",
+      });
     }
 
-    if (!page.url().includes("https://www.pccomponentes.com/cart/order")) {
+    if (!page.url().includes("https://www.pccomponentes.com/cart/summary")) {
       Log.error(
         "Order failed, the navigation to the order page was rejected.",
         true
@@ -168,14 +163,14 @@ export default class PurchaseService {
     await page.waitForTimeout(1000);
 
     await page.evaluate(() => {
-      const conditions = document.getElementById(
-        "pccom-conditions"
+      const conditions = document.querySelector(
+        "input[data-cy='accept-conditions-checkbox']"
       ) as HTMLElement;
       conditions.scrollIntoView({ behavior: "smooth" });
       conditions.click();
     });
 
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(20000);
 
     // Check if the purchase should be stopped
     if (forceStop.value === true) {
@@ -190,8 +185,8 @@ export default class PurchaseService {
     forceStop.unsubscribe();
 
     await page.evaluate(() => {
-      const end = document.getElementById(
-        "GTM-carrito-finalizarCompra"
+      const end = document.querySelector(
+        "button[data-cy='save-and-continue']"
       ) as HTMLElement;
       end.scrollIntoView({ behavior: "smooth" });
       end.click();
@@ -200,7 +195,7 @@ export default class PurchaseService {
     Log.important("All done, crossing fingers...", true);
     Log.breakline();
 
-    await page.waitForTimeout(10000);
+    await page.waitForTimeout(20000);
 
     if (
       !page
@@ -234,22 +229,21 @@ export default class PurchaseService {
     const page = await Utils.createPage(browser, debug, true);
     page.goto("https://www.pccomponentes.com/cart/rawcart");
     await page.waitForSelector("body");
-    const cartData = await page.evaluate(() => {
+    const cartJson = await page.evaluate(() => {
       return document.querySelector("body")?.innerText;
     });
-    if (cartData) {
+    if (cartJson) {
       try {
-        const json = JSON.parse(cartData);
-        const totalQuantity = json.totalQty;
-        const totalPay = json.totalToPay;
-        const articles = json.articles;
-        let message = `💰 Purchasing ${totalQuantity} articles for ${totalPay} EUR:`;
-        articles.forEach((article: any) => {
-          const name = article.name;
-          const quantity = article.qty;
-          const unitPrice = article.unitPrice;
-          // const totalPrice = article.totalPrice;
-          message += `\n\n${quantity} x ${unitPrice} EUR - ${name}`;
+        // transform and validate request body
+        // console.warn(cartJson);
+        const cart = (await transformAndValidate(
+          CartData,
+          cartJson
+        )) as CartData;
+
+        let message = `💰 Purchasing ${cart.totalQty} articles for ${cart.totalToPay} EUR:`;
+        cart.articles.forEach((article) => {
+          message += `\n\n${article.qty} x ${article.unitPrice} EUR - ${article.name}`;
         });
         Log.breakline();
         Log.important(message);
@@ -259,13 +253,14 @@ export default class PurchaseService {
         message += `\n\nPRESS THIS TO CANCEL:\n\n${cancelId}`;
         this.notifyService.notify(message);
         this.notifyService.hearStopRequest(forceStop, cancelId);
-      } catch (error) {
+      } catch (err) {
         Log.error(
-          "Unable to parse JSON data to print the cart info: " + error,
+          "Unable to parse JSON data to print the cart info: " + err,
           true
         );
       }
     }
+
     page.close();
   }
 }

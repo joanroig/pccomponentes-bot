@@ -1,4 +1,4 @@
-import { plainToClass } from "class-transformer";
+import { transformAndValidateSync } from "class-transformer-validator";
 import "dotenv/config";
 import { Browser } from "puppeteer";
 import puppeteer from "puppeteer-extra";
@@ -20,7 +20,7 @@ export default class Bot {
   private readonly debug = puppeteerConfig.debug;
   private readonly plugins = puppeteerConfig.plugins;
   private browser!: Browser;
-  private readonly botConfig: BotConfig;
+  private botConfig!: BotConfig;
 
   private readonly trackers = new Map<number, ArticleTracker>();
 
@@ -29,8 +29,6 @@ export default class Bot {
     private readonly loginService: LoginService,
     private readonly shutdownService: ShutdownService
   ) {
-    this.botConfig = plainToClass(BotConfig, config);
-
     if (this.plugins) {
       // Setup puppeteer plugins (only once, do not put this in the prepareBrowser method!)
       puppeteer.use(StealthPlugin());
@@ -44,6 +42,14 @@ export default class Bot {
   }
 
   async start(): Promise<void> {
+    try {
+      this.botConfig = transformAndValidateSync(BotConfig, config);
+    } catch (err) {
+      Log.error("Configuration error: " + err);
+      this.shutdown(1);
+      return;
+    }
+
     Log.Init(this.botConfig.saveLogs ? true : false);
     Log.info("Current configuration:");
     Log.breakline();

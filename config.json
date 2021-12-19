@@ -1,53 +1,25 @@
 {
   "notify": true,
-  "purchase": false,
+  "purchase": true,
+  "purchaseSame": true,
   "categories": [
     {
       "name": "Outlet GPUs",
       "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6",
       "checkPages": 1,
-      "minUpdateSeconds": 4,
-      "maxUpdateSeconds": 8,
-      "openOnBrowser": true,
+      "minUpdateSeconds": 5,
+      "maxUpdateSeconds": 10,
+      "autoSpeedup": false,
+      "purchaseMultiple": true,
+      "order": "relevance",
       "articles": [
-        {
-          "model": ["2070"],
-          "maxPrice": 360
-        },
-        {
-          "model": ["2070", "super"],
-          "maxPrice": 380
-        },
         {
           "model": ["3060"],
           "maxPrice": 460
         },
         {
           "model": ["3070"],
-          "maxPrice": 560
-        }
-      ]
-    },
-    {
-      "name": "Stock GPUs",
-      "url": "https://www.pccomponentes.com/listado/ajax?idFamilies[]=6",
-      "checkPages": 8,
-      "articles": [
-        {
-          "model": ["2070"],
-          "maxPrice": 460
-        },
-        {
-          "model": ["2070"],
-          "maxPrice": 480
-        },
-        {
-          "model": ["3060"],
-          "maxPrice": 540
-        },
-        {
-          "model": ["3070"],
-          "maxPrice": 660
+          "maxPrice": 580
         }
       ]
     }
