@@ -412,9 +412,12 @@ export default class ArticleTracker {
 
       this.notifyService.notify(
         `'${this.name} tracker' - New articles found:`,
-        difference.map((v) =>
-          v.match + "\n\n" + v.link.includes("rastrillo/") ? v.purchaseLink : ""
-        )
+        difference.map((v) => {
+          const directLink = v.link.includes("rastrillo/")
+            ? v.purchaseLink
+            : "";
+          return v.match + "\n\n" + directLink;
+        })
       );
 
       // Try to purchase the new matches if the bot and the category have the purchase enabled

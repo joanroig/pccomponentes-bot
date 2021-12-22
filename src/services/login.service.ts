@@ -65,7 +65,7 @@ export default class LoginService {
     // }
     // return false;
 
-    await loginPage.waitForTimeout(randomNumberRange(1000, 3000));
+    await loginPage.waitForTimeout(randomNumberRange(500, 1000));
 
     const cursor = createCursor(loginPage, await getRandomPagePoint(loginPage));
 
