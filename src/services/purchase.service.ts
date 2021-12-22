@@ -166,8 +166,13 @@ export default class PurchaseService {
       const conditions = document.querySelector(
         "input[data-cy='accept-conditions-checkbox']"
       ) as HTMLElement;
-      conditions.scrollIntoView({ behavior: "smooth" });
-      conditions.click();
+      if (conditions) {
+        conditions.scrollIntoView({ behavior: "smooth" });
+        conditions.click();
+      } else {
+        Log.error("Unable to click the accept conditions checkbox!", true);
+        return false;
+      }
     });
 
     await page.waitForTimeout(20000);
@@ -188,8 +193,13 @@ export default class PurchaseService {
       const end = document.querySelector(
         "button[data-cy='save-and-continue']"
       ) as HTMLElement;
-      end.scrollIntoView({ behavior: "smooth" });
-      end.click();
+      if (end) {
+        end.scrollIntoView({ behavior: "smooth" });
+        end.click();
+      } else {
+        Log.error("Unable to click the purchase button!", true);
+        return false;
+      }
     });
 
     Log.important("All done, crossing fingers...", true);
@@ -217,7 +227,7 @@ export default class PurchaseService {
       return false;
     }
 
-    page.close();
+    // page.close();
     return true;
   }
 
