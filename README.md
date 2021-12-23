@@ -7,7 +7,7 @@ Implemented for PcComponentes.com stock and outlet articles, useful for tracking
 - Processors
 - Motherboards
 
-In progress: Automatic purchase (no credit card needed).
+Automatic purchase (no credit card needed).
 
 **The bot may fail from time to time due changes in the website, new issues and pull requests are welcome.**
 

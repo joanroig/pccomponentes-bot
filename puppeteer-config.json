@@ -21,15 +21,6 @@
       "defaultViewport": null,
       "ignoreHTTPSErrors": true,
       "timeout": 16000
-    },
-    "notworking": {
-      "headless": false,
-      "args": ["--start-maximized"],
-      "defaultViewport": null,
-      "ignoreHTTPSErrors": true,
-      "timeout": 16000,
-      "executablePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-      "userDataDir": "/Users/jotakode/Library/Application Support/Google/Chrome"
     }
   }
 }
