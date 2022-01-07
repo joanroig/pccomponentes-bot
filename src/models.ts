@@ -82,7 +82,7 @@ export class CategoryConfig {
   @IsNumber()
   maxUpdateSeconds = 40; // Maximum update time for checking new articles
   @IsEnum(ArticleOrder)
-  order: ArticleOrder = ArticleOrder.new; // Order parameter used in the url to fetch the data sorted
+  order: ArticleOrder = ArticleOrder.new; // Order parameter used in the url to fetch the data sorted, relevance is the faster
   @IsNumber()
   checkPages = 3; // Number of pages to check for this category (each page has 24 articles)
   @IsBoolean()

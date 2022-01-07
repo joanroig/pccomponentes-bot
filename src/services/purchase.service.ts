@@ -115,7 +115,7 @@ export default class PurchaseService {
     const forceStop = new BehaviorSubject<boolean>(false);
     this.quickCartCheck(browser, debug, forceStop);
 
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(1000);
 
     const purchaseError = await page.evaluate(() => {
       return document
@@ -160,7 +160,7 @@ export default class PurchaseService {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(100);
 
     await page.evaluate(() => {
       const conditions = document.querySelector(
@@ -175,7 +175,8 @@ export default class PurchaseService {
       }
     });
 
-    await page.waitForTimeout(20000);
+    // await page.waitForTimeout(20000);
+    await page.waitForTimeout(100);
 
     // Check if the purchase should be stopped
     if (forceStop.value === true) {

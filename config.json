@@ -56,15 +56,15 @@
         },
         {
           "model": ["3060", "ti"],
-          "maxPrice": 520
+          "maxPrice": 500
         },
         {
           "model": ["3070"],
-          "maxPrice": 650
+          "maxPrice": 580
         },
         {
           "model": ["3070", "ti"],
-          "maxPrice": 680
+          "maxPrice": 650
         },
         {
           "model": ["3080"],
