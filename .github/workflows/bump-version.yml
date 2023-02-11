@@ -39,7 +39,7 @@ jobs:
           body: ${{ steps.changelog.outputs.clean_changelog }}
 
       - name: Merge master -> develop
-        uses: robotology/gh-action-nightly-merge@v1.3.2
+        uses: robotology/gh-action-nightly-merge@v1.4.0
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         with:
           stable_branch: "master"
