@@ -1,12 +1,13 @@
 {
-  "debug": false,
-  "plugins": false,
+  "debug": true,
+  "plugins": true,
   "browserOptions": {
     "headless": {
       "headless": true,
       "defaultViewport": null,
-      "ignoreHTTPSErrors": "true",
+      "ignoreHTTPSErrors": true,
       "timeout": 16000,
+      "executablePath": "",
       "args": [
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -19,8 +20,9 @@
       "headless": false,
       "args": ["--start-maximized"],
       "defaultViewport": null,
-      "ignoreHTTPSErrors": "true",
-      "timeout": 16000
+      "ignoreHTTPSErrors": true,
+      "timeout": 16000,
+      "executablePath": ""
     }
   }
 }
