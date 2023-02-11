@@ -7,6 +7,7 @@
       "defaultViewport": null,
       "ignoreHTTPSErrors": true,
       "timeout": 16000,
+      "executablePath": "",
       "args": [
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -20,7 +21,8 @@
       "args": ["--start-maximized"],
       "defaultViewport": null,
       "ignoreHTTPSErrors": true,
-      "timeout": 16000
+      "timeout": 16000,
+      "executablePath": ""
     }
   }
 }

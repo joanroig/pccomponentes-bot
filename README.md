@@ -1,17 +1,27 @@
 # PcComponentes Bot
 
-Receive a Telegram message when a article is back to stock!
+Receive a Telegram message when a article is back to stock at the desired price!
 Implemented for PcComponentes.com stock and outlet articles, useful for tracking:
 
 - Graphic cards
 - Processors
 - Motherboards
 
-Automatic purchase (no credit card needed).
-
-**The bot may fail from time to time due changes in the website, new issues and pull requests are welcome.**
-
 > ⚠️ Disclaimer: Please note that this is a research project. I am by no means responsible for any usage of this tool. Use it on your behalf.
+
+## Current status
+
+The project is not actively maintained, therefore the bot may fail from time to time due changes in the website. New issues and pull requests are welcome!
+
+**Fully working**
+
+- Tracking
+- Telegram notifications
+
+**Implementation affected due website changes**
+
+- **Login:** May be fixed by saving the cookies in a file and restoring it on every session.
+- **Automatic purchase:** New purchase page, needs a full rework.
 
 ## Requirements
 
@@ -66,7 +76,7 @@ If the installation was successful, you should be able to run the following comm
 
 ## Configure bot
 
-Edit the `config.json` file with your settings. Use the files in the `examples` folder as a reference, and check the [examples README](/examples/README.md) to know about all configurations.
+Edit the `config.json` file with your settings. Use the files in the `examples` folder as a reference, and check the [examples README](/examples/README.md) to know about all configurations. See [models.ts](src/models.ts) for a detailed explanation of every configuration.
 
 Edit the `.env` file in the root folder by changing the `BOT_TOKEN` string to connect your Telegram account:
 
