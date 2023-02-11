@@ -162,6 +162,9 @@ export default class PurchaseService {
 
     await page.waitForTimeout(100);
 
+    Log.important("Clicking conditions checkbox.", true);
+    Log.breakline();
+
     await page.evaluate(() => {
       const conditions = document.querySelector(
         "input[data-cy='accept-conditions-checkbox']"
@@ -189,6 +192,9 @@ export default class PurchaseService {
 
     // The purchase cannot be stopped from here
     forceStop.unsubscribe();
+
+    Log.important("Clicking purchase button.", true);
+    Log.breakline();
 
     await page.evaluate(() => {
       const end = document.querySelector(

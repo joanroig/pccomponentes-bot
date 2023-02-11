@@ -7,6 +7,7 @@ import Container from "typedi";
 import { Article, ArticleConfig, CategoryConfig } from "./models";
 import NotifyService from "./services/notify.service";
 import PurchaseService from "./services/purchase.service";
+import { Constants } from "./utils/constants";
 import Log from "./utils/log";
 import Utils from "./utils/utils";
 import Validator from "./validator";
@@ -210,7 +211,11 @@ export default class ArticleTracker {
     const clean = sanitizeHtml(bodyHTML, {
       allowedTags: ["article", "a"],
       allowedAttributes: {
-        article: ["data-price", "data-name", "data-id"],
+        article: [
+          Constants.PRODUCT_NAME,
+          Constants.PRODUCT_PRICE,
+          Constants.PRODUCT_ID,
+        ],
         a: ["href"],
       },
     }).replace(/\n{2,}/g, "\n");
@@ -254,11 +259,10 @@ export default class ArticleTracker {
         if (href.includes("/rastrillo/")) {
           id = Number(href.replace("/rastrillo/", ""));
         } else {
-          id = element.attr["data-id"];
+          id = element.attr[Constants.PRODUCT_ID];
         }
-
-        const price = element.attr["data-price"];
-        const name = element.attr["data-name"].map((v: string) =>
+        const price = element.attr[Constants.PRODUCT_PRICE];
+        const name = element.attr[Constants.PRODUCT_NAME].map((v: string) =>
           v.toLowerCase()
         );
         let purchase = true;
