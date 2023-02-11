@@ -1,4 +1,5 @@
 import Ajv, { ValidateFunction } from "ajv";
+import { Constants } from "./utils/constants";
 
 export default class Validator {
   private readonly articleValidator: ValidateFunction<unknown>;
@@ -28,10 +29,15 @@ export default class Validator {
               attr: {
                 type: "object",
                 properties: {
-                  "data-name": { type: "array" },
-                  "data-price": { type: "string" },
+                  "data-product-name": { type: "array" },
+                  "data-product-price": { type: "string" },
+                  "data-product-id": { type: "string" },
                 },
-                required: ["data-name", "data-price"],
+                required: [
+                  Constants.PRODUCT_NAME,
+                  Constants.PRODUCT_PRICE,
+                  Constants.PRODUCT_ID,
+                ],
               },
             },
           },

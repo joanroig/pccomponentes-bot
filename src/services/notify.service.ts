@@ -1,6 +1,6 @@
 import axios from "axios";
 import fs from "fs";
-import { Observable, Subject } from "rxjs";
+import { BehaviorSubject, Observable, Subject } from "rxjs";
 import { Context, Telegraf } from "telegraf";
 import { Service } from "typedi";
 import Log from "../utils/log";
@@ -11,6 +11,7 @@ export default class NotifyService {
   private telegraf!: Telegraf;
   private sendNotifications = false;
   public refreshRequest = new Subject<boolean>();
+  private readonly forceStopList = new Map<string, BehaviorSubject<boolean>>();
 
   constructor(private readonly shutdownService: ShutdownService) {}
 
@@ -163,6 +164,21 @@ export default class NotifyService {
     this.notify(message);
     Log.important(message);
     Log.breakline();
+  }
+
+  hearStopRequest(forceStop: BehaviorSubject<boolean>, stopId: string): void {
+    this.forceStopList.set(stopId, forceStop);
+    this.telegraf.hears(stopId, (ctx) => {
+      const id = ctx.update.message.text;
+      const subs = this.forceStopList.get(id);
+      if (subs && !subs.closed) {
+        Log.breakline();
+        Log.important("Telegram: Force stop command received " + id);
+        Log.breakline();
+        subs.next(true);
+        this.forceStopList.delete(id);
+      }
+    });
   }
 
   private saveChatId(chatId: number) {
