@@ -30,9 +30,7 @@ export default class LoginService {
       return false;
     }
 
-    const loginPage = debug
-      ? await browser.newPage()
-      : await Utils.createHeadlessPage(browser);
+    const loginPage = await Utils.createPage(browser, debug, false);
 
     Log.breakline();
     Log.info("Attempting login...");
@@ -41,11 +39,52 @@ export default class LoginService {
       waitUntil: "networkidle2",
     });
 
-    await loginPage.waitForTimeout(randomNumberRange(1000, 3000));
+    // const success = !loginPage.url().includes("pccomponentes.com/login");
+    // while (!success) {
+    //   await loginPage.waitForTimeout(randomNumberRange(1000, 3000));
+    //   if (success) {
+    //     Log.success("Successfully logged in!");
+    //     this.loginAttempts = 0;
+    //     await loginPage.close();
+    //     return true;
+    //   } else {
+    //     this.loginAttempts++;
+    //     if (this.loginAttempts >= this.maxLoginAttempts) {
+    //       Log.critical("Login failed too much times. Check your credentials.");
+    //       this.notifyService.notify(
+    //         `Login attempt failed, check the credentials. Bot stopped.`
+    //       );
+    //       return false;
+    //     } else {
+    //       Log.error("Login attempt failed. Trying again in 5 seconds...");
+    //       await loginPage.waitForTimeout(5000);
+    //       // await loginPage.close();
+    //       // return this.login(browser, debug);
+    //     }
+    //   }
+    // }
+    // return false;
+
+    await loginPage.waitForTimeout(randomNumberRange(500, 1000));
 
     const cursor = createCursor(loginPage, await getRandomPagePoint(loginPage));
 
-    await cursor.click("input[data-cy='email']", {
+    // Select the email / username field and type in, it may change in the future
+    const email = await loginPage.evaluate(() => {
+      return document.getElementById("email");
+    });
+    const username = await loginPage.evaluate(() => {
+      return document.getElementById("username");
+    });
+
+    let firstInput = "";
+    if (email !== null) {
+      firstInput = "input#email";
+    } else if (username !== null) {
+      firstInput = "input#username";
+    }
+
+    await cursor.click(firstInput, {
       waitForClick: randomNumberRange(1000, 3000),
       moveDelay: randomNumberRange(1000, 3000),
       paddingPercentage: 20,
@@ -53,20 +92,15 @@ export default class LoginService {
     });
     await Utils.humanType(loginPage, this.email.trim());
 
-    await cursor.click("input[data-cy='password']", {
-      waitForClick: randomNumberRange(1000, 3000),
-      moveDelay: randomNumberRange(1000, 3000),
-      paddingPercentage: 20,
-      waitForSelector: 1000,
-    });
+    // Press tab and type password
+    await loginPage.waitForTimeout(randomNumberRange(500, 2000));
+    await loginPage.keyboard.press("Tab");
+    await loginPage.waitForTimeout(randomNumberRange(500, 2000));
     await Utils.humanType(loginPage, this.password.trim());
 
-    await cursor.click("button[data-cy='log-in']", {
-      waitForClick: randomNumberRange(1000, 3000),
-      moveDelay: randomNumberRange(1000, 3000),
-      paddingPercentage: 20,
-      waitForSelector: 1000,
-    });
+    // Press enter
+    await loginPage.waitForTimeout(randomNumberRange(500, 2000));
+    await Utils.humanType(loginPage, String.fromCharCode(13));
 
     await loginPage.waitForTimeout(10000);
 

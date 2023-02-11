@@ -1,6 +1,6 @@
-import { plainToClass } from "class-transformer";
+import { transformAndValidateSync } from "class-transformer-validator";
 import "dotenv/config";
-import { Browser } from "puppeteer";
+import { Browser, executablePath } from "puppeteer";
 import puppeteer from "puppeteer-extra";
 import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
@@ -20,7 +20,7 @@ export default class Bot {
   private readonly debug = puppeteerConfig.debug;
   private readonly plugins = puppeteerConfig.plugins;
   private browser!: Browser;
-  private readonly botConfig: BotConfig;
+  private botConfig!: BotConfig;
 
   private readonly trackers = new Map<number, ArticleTracker>();
 
@@ -29,8 +29,6 @@ export default class Bot {
     private readonly loginService: LoginService,
     private readonly shutdownService: ShutdownService
   ) {
-    this.botConfig = plainToClass(BotConfig, config);
-
     if (this.plugins) {
       // Setup puppeteer plugins (only once, do not put this in the prepareBrowser method!)
       puppeteer.use(StealthPlugin());
@@ -44,6 +42,14 @@ export default class Bot {
   }
 
   async start(): Promise<void> {
+    try {
+      this.botConfig = transformAndValidateSync(BotConfig, config);
+    } catch (err) {
+      Log.error("Configuration error: " + err);
+      this.shutdown(1);
+      return;
+    }
+
     Log.Init(this.botConfig.saveLogs ? true : false);
     Log.info("Current configuration:");
     Log.breakline();
@@ -51,6 +57,11 @@ export default class Bot {
     this.shutdownService.getShutdownRequest().subscribe((code) => {
       this.shutdown(code);
     });
+
+    if (this.debug) {
+      Log.config("Debug enabled.", true);
+      Log.breakline();
+    }
 
     if (this.botConfig.notify) {
       Log.config("Notifications enabled.", true);
@@ -67,7 +78,7 @@ export default class Bot {
       Log.config("Notifications disabled.", false);
     }
     if (this.botConfig.purchase) {
-      Log.config("Purchase enabled, but still not implemented.", false);
+      Log.config("Purchase enabled.", true);
     } else {
       Log.config("Purchase disabled.", false);
     }
@@ -125,6 +136,9 @@ export default class Bot {
       ? puppeteerConfig.browserOptions.debug
       : puppeteerConfig.browserOptions.headless;
 
+    // mandatory setting for new puppeteer versions
+    configData.executablePath = executablePath();
+
     try {
       this.browser = await puppeteer.launch(configData);
     } catch (error) {
@@ -138,23 +152,25 @@ export default class Bot {
       this.reconnectTrackers();
     });
 
-    Log.success(`Browser ready!`);
-
     if (this.botConfig.purchase) {
       try {
         return await this.loginService.login(this.browser, this.debug);
       } catch (error) {
+        this.browser.close();
         Log.error("Exception thrown while logging in: " + error);
         throw error;
       }
     }
+
+    Log.success(`Browser ready!`);
+
     return true;
   }
 
   refreshTrackers(): void {
     this.trackers.forEach((tracker, key) => {
       if (tracker) {
-        tracker.update(true);
+        tracker.update(false, true);
       } else {
         Log.error(
           "Tracker could not be refreshed because it was not found. Tracker id: " +
@@ -169,19 +185,23 @@ export default class Bot {
     this.browser.close(); // Do not await
     this.prepareBrowser().then(
       (success) => {
-        Log.breakline();
-        this.trackers.forEach((tracker, key) => {
-          if (tracker) {
-            Log.important("Reconnecting tracker: " + tracker.getName());
-            tracker.reconnect(this.browser);
-          } else {
-            Log.error(
-              "Tracker could not be reconnected because it was not found: Tracker id: " +
-                key
-            );
-          }
-        });
-        Log.breakline();
+        if (success) {
+          Log.breakline();
+          this.trackers.forEach((tracker, key) => {
+            if (tracker) {
+              Log.important("Reconnecting tracker: " + tracker.getName());
+              tracker.reconnect(this.browser);
+            } else {
+              Log.error(
+                "Tracker could not be reconnected because it was not found: Tracker id: " +
+                  key
+              );
+            }
+          });
+          Log.breakline();
+        } else {
+          this.shutdown(1);
+        }
       },
       (error) => {
         return;
