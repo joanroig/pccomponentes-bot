@@ -1,58 +1,34 @@
 {
   "notify": true,
   "purchase": false,
+  "purchaseSame": false,
   "categories": [
     {
       "name": "Outlet GPUs",
       "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6",
       "checkPages": 1,
+      "minUpdateSeconds": 5,
+      "maxUpdateSeconds": 8,
+      "autoSpeedup": false,
+      "purchaseMultiple": true,
+      "order": "relevance",
+      "openOnBrowser": false,
       "articles": [
         {
-          "model": ["2060", "super"],
-          "maxPrice": 320
+          "model": ["3060", "ti"],
+          "maxPrice": 500
         },
         {
-          "model": ["2070"],
-          "maxPrice": 350
+          "model": ["3070"],
+          "maxPrice": 580
         },
         {
-          "model": ["2070", "super", "msi"],
-          "maxPrice": 370
+          "model": ["3070", "ti"],
+          "maxPrice": 650
         },
         {
-          "model": ["3060"],
-          "maxPrice": 440
-        },
-        {
-          "model": ["3070", "evga"],
-          "maxPrice": 540
-        }
-      ]
-    },
-    {
-      "name": "Stock GPUs",
-      "url": "https://www.pccomponentes.com/listado/ajax?idFamilies[]=6",
-      "checkPages": 8,
-      "articles": [
-        {
-          "model": ["2060", "super"],
-          "maxPrice": 420
-        },
-        {
-          "model": ["2070"],
-          "maxPrice": 450
-        },
-        {
-          "model": ["2070", "super", "msi"],
-          "maxPrice": 470
-        },
-        {
-          "model": ["3060"],
-          "maxPrice": 540
-        },
-        {
-          "model": ["3070", "evga"],
-          "maxPrice": 640
+          "model": ["3080"],
+          "maxPrice": 700
         }
       ]
     }
