@@ -1,59 +1,19 @@
 {
   "notify": true,
-  "purchase": true,
-  "purchaseSame": true,
+  "purchase": false,
+  "purchaseSame": false,
   "categories": [
     {
       "name": "Outlet GPUs",
       "url": "https://www.pccomponentes.com/outlet/ajax?idFamilies[]=6",
       "checkPages": 1,
-      "minUpdateSeconds": 2,
-      "maxUpdateSeconds": 4,
+      "minUpdateSeconds": 5,
+      "maxUpdateSeconds": 8,
       "autoSpeedup": false,
       "purchaseMultiple": true,
       "order": "relevance",
       "openOnBrowser": false,
       "articles": [
-        {
-          "model": ["1650"],
-          "maxPrice": 140
-        },
-        {
-          "model": ["1660"],
-          "maxPrice": 180
-        },
-        {
-          "model": ["1660", "super"],
-          "maxPrice": 200
-        },
-        {
-          "model": ["1660", "ti"],
-          "maxPrice": 200
-        },
-        {
-          "model": ["2060"],
-          "maxPrice": 280
-        },
-        {
-          "model": ["2060", "super"],
-          "maxPrice": 320
-        },
-        {
-          "model": ["2070"],
-          "maxPrice": 360
-        },
-        {
-          "model": ["2070", "super"],
-          "maxPrice": 380
-        },
-        {
-          "model": ["2080"],
-          "maxPrice": 400
-        },
-        {
-          "model": ["3060"],
-          "maxPrice": 460
-        },
         {
           "model": ["3060", "ti"],
           "maxPrice": 500

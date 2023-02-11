@@ -1,6 +1,6 @@
 import { transformAndValidateSync } from "class-transformer-validator";
 import "dotenv/config";
-import { Browser } from "puppeteer";
+import { Browser, executablePath } from "puppeteer";
 import puppeteer from "puppeteer-extra";
 import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
@@ -135,6 +135,9 @@ export default class Bot {
     const configData = this.debug
       ? puppeteerConfig.browserOptions.debug
       : puppeteerConfig.browserOptions.headless;
+
+    // mandatory setting for new puppeteer versions
+    configData.executablePath = executablePath();
 
     try {
       this.browser = await puppeteer.launch(configData);
