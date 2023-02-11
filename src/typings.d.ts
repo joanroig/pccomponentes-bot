@@ -1,2 +1,2 @@
 declare module "html2json";
-declare module "open";
+declare module "out-url";
