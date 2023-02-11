@@ -1,17 +1,16 @@
 import { randomNumberRange } from "ghost-cursor/lib/math";
-import open from "open";
+import { html2json } from "html2json";
+import { open } from "out-url";
 import { Browser, Page } from "puppeteer";
 import sanitizeHtml from "sanitize-html";
 import Container from "typedi";
 import { Article, ArticleConfig, CategoryConfig } from "./models";
 import NotifyService from "./services/notify.service";
 import PurchaseService from "./services/purchase.service";
+import { Constants } from "./utils/constants";
 import Log from "./utils/log";
 import Utils from "./utils/utils";
 import Validator from "./validator";
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const html2json = require("html2json").html2json;
 
 /**
  * Instantiable class that will take care of tracking a article, send notifications and purchasing it if needed.
@@ -23,11 +22,19 @@ export default class ArticleTracker {
   private readonly purchase: boolean;
   private readonly purchaseSame: boolean;
 
-  private previous: Article[] = [];
+  private previousMatches: Article[] = [];
+  private previousAllAvailable: string[] = [];
+
   // private buying = false;
   private done = false;
   private checking = false;
   private notifyNextMatch = false;
+
+  private minUpdateSeconds;
+  private maxUpdateSeconds;
+
+  private speedupStartedTime: number | undefined = undefined;
+  private readonly speedupTimeout = 30 * 60 * 1000; // Half hour
 
   private browser: Browser;
   private page!: Page;
@@ -47,6 +54,8 @@ export default class ArticleTracker {
   ) {
     this.name = id;
     this.config = config;
+    this.minUpdateSeconds = this.config.minUpdateSeconds;
+    this.maxUpdateSeconds = this.config.maxUpdateSeconds;
     this.browser = browser;
     this.purchase = purchase;
     this.purchaseSame = purchaseSame;
@@ -58,8 +67,13 @@ export default class ArticleTracker {
     // Create the page that will be used for this tracker
     await this.newPage();
 
+    // Start the speedup
+    if (this.config.autoSpeedup) {
+      this.startSpeedup();
+    }
+
     // First iteration
-    this.update();
+    await this.update(true);
 
     // Infinite loop
     this.loop();
@@ -79,9 +93,7 @@ export default class ArticleTracker {
   }
 
   async newPage(): Promise<void> {
-    this.page = this.debug
-      ? await this.browser.newPage()
-      : await Utils.createHeadlessPage(this.browser);
+    this.page = await Utils.createPage(this.browser, this.debug, true);
   }
 
   // Infinite loop with a pseudo-random timeout to fetch data imitating a human behaviour
@@ -91,13 +103,14 @@ export default class ArticleTracker {
       return;
     }
 
-    setTimeout(() => {
-      this.update();
+    setTimeout(async () => {
+      // Wait for the update to be done
+      await this.update();
       this.loop();
-    }, randomNumberRange(this.config.minUpdateSeconds * 1000, this.config.maxUpdateSeconds * 1000));
+    }, randomNumberRange(this.minUpdateSeconds * 1000, this.maxUpdateSeconds * 1000));
   }
 
-  async update(notify?: boolean): Promise<void> {
+  async update(first = false, notify?: boolean): Promise<void> {
     if (notify) {
       this.notifyNextMatch = true;
     }
@@ -138,6 +151,14 @@ export default class ArticleTracker {
       return;
     }
 
+    if (pages === "") {
+      Log.error(
+        `'${this.name} tracker' - Error while checking page data, found an empty page.`
+      );
+      this.checking = false;
+      return;
+    }
+
     // Convert the cleaned HTML output to JSON objects
     const json = html2json(pages);
 
@@ -153,10 +174,13 @@ export default class ArticleTracker {
       return;
     }
 
-    const matches = this.processData(json);
+    const data = this.processData(json);
 
-    // Notify the next matches if requested, ensures the sending of the notification in case the tracker is still checking data
+    const matches = data.matches;
+    const allAvailable = data.allAvailable;
+
     if (this.notifyNextMatch) {
+      // Notify the next matches if requested, ensures the sending of the notification in case the tracker is still checking data
       this.notifyNextMatch = false;
       this.notifyService.notify(
         `'${this.name} tracker' - All articles available:`,
@@ -164,16 +188,22 @@ export default class ArticleTracker {
       );
     }
 
+    if (this.config.autoSpeedup) {
+      this.checkAllStock(allAvailable, first);
+    }
     this.checkIfNew(matches);
   }
 
   async checkPages(pageCount: number, result: string): Promise<string> {
     await this.page.goto(
       this.config.url + `&page=${pageCount}&order=${this.config.order}`,
-      {
-        waitUntil: "networkidle2",
-      }
+      { waitUntil: "domcontentloaded" } // Only wait till the dom is loaded, it's faster
     );
+
+    // Hide the rating star and image elements without waiting (it does not affect the performance, just to have a cleaner list while debugging)
+    this.page.addStyleTag({
+      content: ".c-star-rating.cy-product-rating,img{display:none}",
+    });
 
     const bodyHTML = await this.page.evaluate(() => document.body.innerHTML);
 
@@ -181,7 +211,11 @@ export default class ArticleTracker {
     const clean = sanitizeHtml(bodyHTML, {
       allowedTags: ["article", "a"],
       allowedAttributes: {
-        article: ["data-price", "data-name"],
+        article: [
+          Constants.PRODUCT_NAME,
+          Constants.PRODUCT_PRICE,
+          Constants.PRODUCT_ID,
+        ],
         a: ["href"],
       },
     }).replace(/\n{2,}/g, "\n");
@@ -204,27 +238,34 @@ export default class ArticleTracker {
     }
   }
 
-  processData(json: any): Article[] {
+  processData(json: any): { matches: Article[]; allAvailable: string[] } {
     // List of items that match the requisites (each item is a string with price, name and URL)
     const matches: Article[] = [];
+    // List of all items in stock, used to check changes (we can react on it)
+    const allAvailable: string[] = [];
 
     if (!json || !json.child) {
       Log.error("Missing data, skipping...");
-      return [];
+      return { matches, allAvailable };
     }
 
     json.child.forEach((element: any) => {
       if (element.attr && element.tag === "article") {
-        const price = element.attr["data-price"];
-        const name = element.attr["data-name"].map((v: string) =>
+        const href = element.child.find((a: any) => a.tag === "a").attr
+          .href as string;
+
+        let id: number;
+
+        if (href.includes("/rastrillo/")) {
+          id = Number(href.replace("/rastrillo/", ""));
+        } else {
+          id = element.attr[Constants.PRODUCT_ID];
+        }
+        const price = element.attr[Constants.PRODUCT_PRICE];
+        const name = element.attr[Constants.PRODUCT_NAME].map((v: string) =>
           v.toLowerCase()
         );
         let purchase = true;
-
-        // Check if the price is below the maximum of this category (if defined)
-        if (this.config.maxPrice && price >= this.config.maxPrice) {
-          return;
-        }
 
         // Check if out of stock
         if (
@@ -235,6 +276,14 @@ export default class ArticleTracker {
           return;
         }
 
+        // Build link and and save to the all available list
+        const link = "https://www.pccomponentes.com" + href;
+        allAvailable.push(link);
+
+        // Check if the price is below the maximum of this category (if defined)
+        if (this.config.maxPrice && price >= this.config.maxPrice) {
+          return;
+        }
         if (
           this.config.articles.some((article: ArticleConfig) => {
             // Check if the price is below the maximum of this article (if defined)
@@ -262,44 +311,117 @@ export default class ArticleTracker {
           })
         ) {
           //  Build link, name and price of the article in a single string
-          const link =
-            "https://www.pccomponentes.com" +
-            element.child.find((a: any) => a.tag === "a").attr.href;
+          const purchaseLink =
+            "https://www.pccomponentes.com/cart/addItem/" + id;
           const nameText = `[${name.join([" "])}](${link})`;
           const priceText = `*${price} EUR*`;
           const match = `${priceText}\n${nameText}`;
-          const article: Article = { name, price, link, match, purchase };
+          const article: Article = {
+            id,
+            name,
+            price,
+            link,
+            purchaseLink,
+            match,
+            purchase,
+          };
           matches.push(article);
         }
       }
     });
-    return matches;
+    return { matches, allAvailable };
+  }
+
+  async checkAllStock(allAvailable: string[], first: boolean): Promise<void> {
+    // First iteration
+    if (first) {
+      this.previousAllAvailable = allAvailable;
+      return;
+    }
+
+    // Check for any stock changes - use difference to only get the new ones
+    const difference = allAvailable.filter(
+      (a) => !this.previousAllAvailable.find((b) => a === b)
+    );
+    if (difference.length > 0) {
+      this.startSpeedup(difference);
+    }
+    // Check if the timeout is done to set the normal update time again
+    if (
+      this.speedupStartedTime !== undefined &&
+      new Date().getTime() - this.speedupStartedTime > this.speedupTimeout
+    ) {
+      this.stopSpeedup();
+    }
+
+    // Update previous
+    this.previousAllAvailable = allAvailable;
+  }
+
+  startSpeedup(difference?: string[]): void {
+    if (difference) {
+      Log.breakline();
+      Log.important(
+        `'${this.name} tracker' - Stock changes detected. Articles found:\n\n` +
+          difference.map((v) => v).join("\n"),
+        true
+      );
+      Log.breakline();
+    }
+    const endDate = new Date(new Date().getTime() + this.speedupTimeout);
+    const endTime = Utils.getHoursMinutesFromDate(endDate);
+    Log.breakline();
+    Log.important(`'${this.name} tracker' - Speed up until ${endTime} h`, true);
+    Log.breakline();
+    this.minUpdateSeconds = 0.1;
+    this.maxUpdateSeconds = 0.5;
+    this.speedupStartedTime = new Date().getTime();
+  }
+
+  stopSpeedup(): void {
+    Log.breakline();
+    Log.important(
+      `'${this.name} tracker' - No stock changes for a while, speed up stopped.`,
+      true
+    );
+    Log.breakline();
+    this.speedupStartedTime = undefined;
+    this.minUpdateSeconds = this.config.minUpdateSeconds;
+    this.maxUpdateSeconds = this.config.maxUpdateSeconds;
   }
 
   checkIfNew(matches: Article[]): void {
     // Check if there is any new article - use difference to only get the new ones
     const difference = matches.filter(
-      (a) => !this.previous.find((b) => a.link === b.link)
+      (a) => !this.previousMatches.find((b) => a.link === b.link)
     );
 
     if (difference.length > 0) {
+      // Adds the item into the cart in the default browser
+      if (this.config.openOnBrowser) {
+        difference.forEach((a) => {
+          open(a.purchaseLink);
+        });
+      }
+
       Log.breakline();
       Log.success(`'${this.name} tracker' - New articles found:`, true);
       Log.important("\n" + difference.map((v) => v.match).join("\n\n"));
       Log.breakline();
 
-      // opens the url in the default browser
-      if (this.config.openOnBrowser) {
-        difference
-          .map((v) => v.link)
-          .forEach((link) => {
-            open(link);
-          });
-      }
+      // this.notifyService.notify(
+      //   `'${this.name} tracker' - New articles found:`,
+      //   difference.map((v) => v.match + "\n\n" + v.purchaseLink)
+      // );
 
       this.notifyService.notify(
         `'${this.name} tracker' - New articles found:`,
-        difference.map((v) => v.match)
+        difference.map((v) => {
+          const directLink = v.link.includes("rastrillo/")
+            ? v.purchaseLink
+            : "";
+          return v.match + "\n\n" + directLink;
+        })
       );
 
       // Try to purchase the new matches if the bot and the category have the purchase enabled
@@ -311,96 +433,56 @@ export default class ArticleTracker {
     }
 
     // Update previous
-    this.previous = matches;
+    this.previousMatches = matches;
 
     this.checking = false;
   }
 
+  // TODO maybe make this one async, and then make the previous loop wait for this result
   checkPurchaseConditions(articles: Article[]): void {
-    articles.forEach((article) => {
+    articles.forEach(async (article) => {
       if (this.purchaseSame === false) {
         if (this.purchaseService.isAlreadyPurchased(article.link)) {
           Log.important(
-            `'${this.name} tracker' - Already purchased, skipping:`
+            `'${this.name} tracker' - Already purchased, skipping:`,
+            true
           );
           Log.breakline();
           Log.success([article.match]);
           Log.breakline();
           return;
-        } else {
-          this.purchaseService.markAsPurchased(article.link);
         }
       }
+
       if (article.purchase) {
-        Log.success(`'${this.name} tracker' - Start purchase:`);
+        // this.buying = true;
+        Log.success(`'${this.name} tracker' - Start purchase:`, true);
         Log.breakline();
         Log.success([article.match]);
         Log.breakline();
-        Log.critical("Purchase still not implemented.");
-        Log.breakline();
+        this.notifyService.notify(`'${this.name} tracker' - Start purchase:`, [
+          article.match,
+        ]);
+        this.purchaseService.markAsPurchased(article.link);
+        this.purchaseService
+          .purchase(article, this.browser, this.debug)
+          .then((success) => {
+            if (success) {
+              Log.success("Purchase completed!", true);
+              this.notifyService.notify(
+                `'${this.name} tracker' - Purchase completed!: `,
+                [article.match]
+              );
+            } else {
+              Log.error("Purchase failed!", true);
+              this.notifyService.notify(
+                `'${this.name} tracker' - Purchase failed!: `,
+                [article.match]
+              );
+            }
+            Log.breakline();
+          });
       }
     });
-
-    // const purchaseConditions = this.config.purchaseConditions;
-    // if (!purchaseConditions) {
-    //   Log.error(
-    //     `Purchase is enabled, but the article tracker '${this.id}' has no purchase conditions. Check the config.json file.`
-    //   );
-    //   return;
-    // }
-    //
-    // // Check if the purchase conditions are met
-    // purchaseConditions.forEach((conditions: ArticleConfig) => {
-    //   if (
-    //     !this.buying &&
-    //     conditions.price >= article.price &&
-    //     conditions.model.every((v: string) =>
-    //       article.name.includes(v.toLowerCase())
-    //     )
-    //   ) {
-    //     if (!this.purchased.map((v) => v.link).includes(article.link)) {
-    //       this.buy(article, conditions);
-    //     }
-    //   }
-    // });
   }
-
-  //   buy(article: Article, conditions: ArticleConfig): void {
-  //     this.purchased.push(article);
-  //     Log.success(
-  //       `'${this.id} tracker' - Nice price, starting the purchase!` +
-  //         [article.match]
-  //     );
-  //     this.notifyService.notify(
-  //       `'${this.id} tracker' - Nice price, starting the purchase!`,
-  //       [article.match]
-  //     );
-
-  //     this.buying = true;
-  //     this.purchaseService
-  //       .run(article.link, conditions.price, 8000)
-  //       .then((result: boolean) => {
-  //         if (result) {
-  //           Log.success(`'${this.id} tracker' - Purchased! ` + [article.match]);
-  //           this.notifyService.notify(`'${this.id} tracker' - Purchased! `, [
-  //             article.match,
-  //           ]);
-  //           if (!this.config.purchaseMultiple) {
-  //             this.done = true;
-  //             this.notifyService.notify(
-  //               `'${this.id} tracker' - Purchase completed, tracker will be stopped.`
-  //             );
-  //           }
-  //         } else {
-  //           Log.error(
-  //             `'${this.id} tracker' - Purchase failed: ` + [article.match]
-  //           );
-  //           this.notifyService.notify(
-  //             `'${this.id} tracker' - Purchase failed: `,
-  //             [article.match]
-  //           );
-  //           this.buying = false;
-  //         }
-  //       });
-  //   }
 }
