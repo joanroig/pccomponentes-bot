@@ -1,3 +1,9 @@
+# ⚠️ Deprecation Notice
+
+This project is **no longer actively maintained** and is not working with the current PcComponentes website due to recent changes. Contributions are welcome, but there may be limited support for new issues or pull requests.
+
+---
+
 # PcComponentes Bot
 
 Receive a Telegram message when a article is back to stock at the desired price!
